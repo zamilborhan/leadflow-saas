@@ -1,0 +1,16 @@
+User
+Business
+BusinessMember
+Lead
+LeadActivity
+LeadNote
+FollowUp
+FacebookConnection
+FacebookPage
+FacebookForm
+WhatsAppConnection
+WhatsAppMessage
+WhatsAppTemplate
+Plan
+Subscription
+Payment

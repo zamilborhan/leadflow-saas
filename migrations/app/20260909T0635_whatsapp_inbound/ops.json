@@ -1,0 +1,171 @@
+[
+  {
+    "id": "column.public.WhatsAppMessage.body",
+    "label": "Add column \"body\" to \"WhatsAppMessage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "body",
+        "table": "WhatsAppMessage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"body\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "WhatsAppMessage",
+          "body"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"body\"",
+        "sql": "ALTER TABLE \"public\".\"WhatsAppMessage\" ADD COLUMN \"body\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"body\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "WhatsAppMessage",
+          "body"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.WhatsAppMessage.fromPhone",
+    "label": "Add column \"fromPhone\" to \"WhatsAppMessage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "fromPhone",
+        "table": "WhatsAppMessage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"fromPhone\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "WhatsAppMessage",
+          "fromPhone"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"fromPhone\"",
+        "sql": "ALTER TABLE \"public\".\"WhatsAppMessage\" ADD COLUMN \"fromPhone\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"fromPhone\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "WhatsAppMessage",
+          "fromPhone"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.WhatsAppMessage.leadId",
+    "label": "Drop NOT NULL on \"WhatsAppMessage\".\"leadId\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "leadId",
+        "table": "WhatsAppMessage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"leadId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "WhatsAppMessage",
+          "leadId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"leadId\"",
+        "sql": "ALTER TABLE \"public\".\"WhatsAppMessage\" ALTER COLUMN \"leadId\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"leadId\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "WhatsAppMessage",
+          "leadId",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.WhatsAppMessage.WhatsAppMessage_businessId_messageId_key",
+    "label": "Add unique constraint on \"WhatsAppMessage\" (businessId, messageId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "WhatsAppMessage_businessId_messageId_key",
+        "table": "WhatsAppMessage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"WhatsAppMessage_businessId_messageId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WhatsAppMessage_businessId_messageId_key",
+          "public",
+          "\"public\".\"WhatsAppMessage\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"WhatsAppMessage_businessId_messageId_key\"",
+        "sql": "ALTER TABLE \"public\".\"WhatsAppMessage\" ADD CONSTRAINT \"WhatsAppMessage_businessId_messageId_key\" UNIQUE (\"businessId\", \"messageId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"WhatsAppMessage_businessId_messageId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WhatsAppMessage_businessId_messageId_key",
+          "public",
+          "\"public\".\"WhatsAppMessage\""
+        ]
+      }
+    ]
+  }
+]

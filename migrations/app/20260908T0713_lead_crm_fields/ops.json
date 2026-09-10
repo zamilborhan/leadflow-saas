@@ -1,0 +1,296 @@
+[
+  {
+    "id": "column.public.Lead.adName",
+    "label": "Add column \"adName\" to \"Lead\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "adName",
+        "table": "Lead"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"adName\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "adName"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"adName\"",
+        "sql": "ALTER TABLE \"public\".\"Lead\" ADD COLUMN \"adName\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"adName\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "adName"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Lead.adSetName",
+    "label": "Add column \"adSetName\" to \"Lead\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "adSetName",
+        "table": "Lead"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"adSetName\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "adSetName"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"adSetName\"",
+        "sql": "ALTER TABLE \"public\".\"Lead\" ADD COLUMN \"adSetName\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"adSetName\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "adSetName"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Lead.archivedAt",
+    "label": "Add column \"archivedAt\" to \"Lead\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "archivedAt",
+        "table": "Lead"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"archivedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "archivedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"archivedAt\"",
+        "sql": "ALTER TABLE \"public\".\"Lead\" ADD COLUMN \"archivedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"archivedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "archivedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Lead.campaignName",
+    "label": "Add column \"campaignName\" to \"Lead\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "campaignName",
+        "table": "Lead"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"campaignName\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "campaignName"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"campaignName\"",
+        "sql": "ALTER TABLE \"public\".\"Lead\" ADD COLUMN \"campaignName\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"campaignName\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "campaignName"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Lead.facebookLeadId",
+    "label": "Add column \"facebookLeadId\" to \"Lead\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "facebookLeadId",
+        "table": "Lead"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"facebookLeadId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "facebookLeadId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"facebookLeadId\"",
+        "sql": "ALTER TABLE \"public\".\"Lead\" ADD COLUMN \"facebookLeadId\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"facebookLeadId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "facebookLeadId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Lead.lastContactedAt",
+    "label": "Add column \"lastContactedAt\" to \"Lead\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "lastContactedAt",
+        "table": "Lead"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"lastContactedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "lastContactedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"lastContactedAt\"",
+        "sql": "ALTER TABLE \"public\".\"Lead\" ADD COLUMN \"lastContactedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"lastContactedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "lastContactedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.Lead.nextFollowUpAt",
+    "label": "Add column \"nextFollowUpAt\" to \"Lead\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "nextFollowUpAt",
+        "table": "Lead"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"nextFollowUpAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "nextFollowUpAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"nextFollowUpAt\"",
+        "sql": "ALTER TABLE \"public\".\"Lead\" ADD COLUMN \"nextFollowUpAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"nextFollowUpAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Lead",
+          "nextFollowUpAt"
+        ]
+      }
+    ]
+  }
+]

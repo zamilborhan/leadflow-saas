@@ -1,0 +1,203 @@
+[
+  {
+    "id": "table.AutomationJob",
+    "label": "Create table \"AutomationJob\"",
+    "summary": "Creates table \"AutomationJob\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AutomationJob"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AutomationJob\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AutomationJob\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AutomationJob\"",
+        "sql": "CREATE TABLE \"public\".\"AutomationJob\" (\n  \"attempts\" int4 DEFAULT 0 NOT NULL,\n  \"businessId\" character(36) NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"dedupeKey\" text NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"lastError\" text,\n  \"leadId\" character(36) NOT NULL,\n  \"nextRetryAt\" timestamptz,\n  \"payloadJson\" text,\n  \"ruleId\" character(36),\n  \"status\" text DEFAULT 'QUEUED' NOT NULL,\n  \"trigger\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AutomationJob\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AutomationJob\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.AutomationLog",
+    "label": "Create table \"AutomationLog\"",
+    "summary": "Creates table \"AutomationLog\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AutomationLog"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AutomationLog\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AutomationLog\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AutomationLog\"",
+        "sql": "CREATE TABLE \"public\".\"AutomationLog\" (\n  \"action\" text NOT NULL,\n  \"businessId\" character(36) NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"detail\" text,\n  \"id\" character(36) NOT NULL,\n  \"jobId\" character(36),\n  \"leadId\" character(36),\n  \"ruleId\" character(36),\n  \"status\" text NOT NULL,\n  \"trigger\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AutomationLog\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AutomationLog\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.AutomationRule",
+    "label": "Create table \"AutomationRule\"",
+    "summary": "Creates table \"AutomationRule\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AutomationRule"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AutomationRule\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AutomationRule\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AutomationRule\"",
+        "sql": "CREATE TABLE \"public\".\"AutomationRule\" (\n  \"businessId\" character(36) NOT NULL,\n  \"configJson\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"name\" text NOT NULL,\n  \"status\" text DEFAULT 'ENABLED' NOT NULL,\n  \"trigger\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AutomationRule\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AutomationRule\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.AutomationJob.AutomationJob_businessId_dedupeKey_key",
+    "label": "Add unique constraint on \"AutomationJob\" (businessId, dedupeKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "AutomationJob_businessId_dedupeKey_key",
+        "table": "AutomationJob"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"AutomationJob_businessId_dedupeKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AutomationJob_businessId_dedupeKey_key",
+          "public",
+          "\"public\".\"AutomationJob\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"AutomationJob_businessId_dedupeKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"AutomationJob\" ADD CONSTRAINT \"AutomationJob_businessId_dedupeKey_key\" UNIQUE (\"businessId\", \"dedupeKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"AutomationJob_businessId_dedupeKey_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AutomationJob_businessId_dedupeKey_key",
+          "public",
+          "\"public\".\"AutomationJob\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.AutomationRule.AutomationRule_businessId_trigger_name_key",
+    "label": "Add unique constraint on \"AutomationRule\" (businessId, trigger, name)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "AutomationRule_businessId_trigger_name_key",
+        "table": "AutomationRule"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"AutomationRule_businessId_trigger_name_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AutomationRule_businessId_trigger_name_key",
+          "public",
+          "\"public\".\"AutomationRule\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"AutomationRule_businessId_trigger_name_key\"",
+        "sql": "ALTER TABLE \"public\".\"AutomationRule\" ADD CONSTRAINT \"AutomationRule_businessId_trigger_name_key\" UNIQUE (\"businessId\", \"trigger\", \"name\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"AutomationRule_businessId_trigger_name_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AutomationRule_businessId_trigger_name_key",
+          "public",
+          "\"public\".\"AutomationRule\""
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,164 @@
+[
+  {
+    "id": "table.Plan",
+    "label": "Create table \"Plan\"",
+    "summary": "Creates table \"Plan\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Plan"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Plan\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Plan\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Plan\"",
+        "sql": "CREATE TABLE \"public\".\"Plan\" (\n  \"code\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"leadsPerMonth\" int4 NOT NULL,\n  \"maxBusinesses\" int4,\n  \"maxUsers\" int4 NOT NULL,\n  \"name\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Plan\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Plan\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Subscription",
+    "label": "Create table \"Subscription\"",
+    "summary": "Creates table \"Subscription\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Subscription"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Subscription\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Subscription\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Subscription\"",
+        "sql": "CREATE TABLE \"public\".\"Subscription\" (\n  \"billingCycle\" text DEFAULT 'MONTHLY' NOT NULL,\n  \"businessId\" character(36) NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"currentPeriodEnd\" timestamptz NOT NULL,\n  \"currentPeriodStart\" timestamptz NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"planCode\" text DEFAULT 'FREE' NOT NULL,\n  \"status\" text DEFAULT 'ACTIVE' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Subscription\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Subscription\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Plan.Plan_code_key",
+    "label": "Add unique constraint on \"Plan\" (code)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Plan_code_key",
+        "table": "Plan"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Plan_code_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Plan_code_key",
+          "public",
+          "\"public\".\"Plan\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Plan_code_key\"",
+        "sql": "ALTER TABLE \"public\".\"Plan\" ADD CONSTRAINT \"Plan_code_key\" UNIQUE (\"code\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Plan_code_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Plan_code_key",
+          "public",
+          "\"public\".\"Plan\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Subscription.Subscription_businessId_key",
+    "label": "Add unique constraint on \"Subscription\" (businessId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Subscription_businessId_key",
+        "table": "Subscription"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Subscription_businessId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Subscription_businessId_key",
+          "public",
+          "\"public\".\"Subscription\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Subscription_businessId_key\"",
+        "sql": "ALTER TABLE \"public\".\"Subscription\" ADD CONSTRAINT \"Subscription_businessId_key\" UNIQUE (\"businessId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Subscription_businessId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Subscription_businessId_key",
+          "public",
+          "\"public\".\"Subscription\""
+        ]
+      }
+    ]
+  }
+]

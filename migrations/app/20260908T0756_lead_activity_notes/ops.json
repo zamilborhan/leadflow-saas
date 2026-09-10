@@ -1,0 +1,80 @@
+[
+  {
+    "id": "table.LeadActivity",
+    "label": "Create table \"LeadActivity\"",
+    "summary": "Creates table \"LeadActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "LeadActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"LeadActivity\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"LeadActivity\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"LeadActivity\"",
+        "sql": "CREATE TABLE \"public\".\"LeadActivity\" (\n  \"actorId\" character(36),\n  \"body\" text,\n  \"businessId\" character(36) NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"leadId\" character(36) NOT NULL,\n  \"type\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"LeadActivity\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"LeadActivity\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.LeadNote",
+    "label": "Create table \"LeadNote\"",
+    "summary": "Creates table \"LeadNote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "LeadNote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"LeadNote\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"LeadNote\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"LeadNote\"",
+        "sql": "CREATE TABLE \"public\".\"LeadNote\" (\n  \"authorId\" character(36) NOT NULL,\n  \"body\" text NOT NULL,\n  \"businessId\" character(36) NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"leadId\" character(36) NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"LeadNote\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"LeadNote\""
+        ]
+      }
+    ]
+  }
+]

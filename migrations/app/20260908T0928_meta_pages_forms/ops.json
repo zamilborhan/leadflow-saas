@@ -1,0 +1,164 @@
+[
+  {
+    "id": "table.MetaForm",
+    "label": "Create table \"MetaForm\"",
+    "summary": "Creates table \"MetaForm\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "MetaForm"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"MetaForm\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MetaForm\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"MetaForm\"",
+        "sql": "CREATE TABLE \"public\".\"MetaForm\" (\n  \"businessId\" character(36) NOT NULL,\n  \"connectedAt\" timestamptz,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"metaFormId\" text NOT NULL,\n  \"metaPageId\" text NOT NULL,\n  \"name\" text NOT NULL,\n  \"status\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"MetaForm\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MetaForm\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.MetaPage",
+    "label": "Create table \"MetaPage\"",
+    "summary": "Creates table \"MetaPage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "MetaPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"MetaPage\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MetaPage\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"MetaPage\"",
+        "sql": "CREATE TABLE \"public\".\"MetaPage\" (\n  \"businessId\" character(36) NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"metaPageId\" text NOT NULL,\n  \"name\" text NOT NULL,\n  \"pageTokenEncrypted\" text NOT NULL,\n  \"selectedAt\" timestamptz,\n  \"tasks\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"MetaPage\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MetaPage\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.MetaForm.MetaForm_businessId_metaFormId_key",
+    "label": "Add unique constraint on \"MetaForm\" (businessId, metaFormId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "MetaForm_businessId_metaFormId_key",
+        "table": "MetaForm"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"MetaForm_businessId_metaFormId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MetaForm_businessId_metaFormId_key",
+          "public",
+          "\"public\".\"MetaForm\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"MetaForm_businessId_metaFormId_key\"",
+        "sql": "ALTER TABLE \"public\".\"MetaForm\" ADD CONSTRAINT \"MetaForm_businessId_metaFormId_key\" UNIQUE (\"businessId\", \"metaFormId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"MetaForm_businessId_metaFormId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MetaForm_businessId_metaFormId_key",
+          "public",
+          "\"public\".\"MetaForm\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.MetaPage.MetaPage_businessId_metaPageId_key",
+    "label": "Add unique constraint on \"MetaPage\" (businessId, metaPageId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "MetaPage_businessId_metaPageId_key",
+        "table": "MetaPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"MetaPage_businessId_metaPageId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MetaPage_businessId_metaPageId_key",
+          "public",
+          "\"public\".\"MetaPage\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"MetaPage_businessId_metaPageId_key\"",
+        "sql": "ALTER TABLE \"public\".\"MetaPage\" ADD CONSTRAINT \"MetaPage_businessId_metaPageId_key\" UNIQUE (\"businessId\", \"metaPageId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"MetaPage_businessId_metaPageId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MetaPage_businessId_metaPageId_key",
+          "public",
+          "\"public\".\"MetaPage\""
+        ]
+      }
+    ]
+  }
+]

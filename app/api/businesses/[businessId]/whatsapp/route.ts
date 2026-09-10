@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { SESSION_COOKIE_NAME } from "@/src/lib/auth/cookies";
+import { getSessionUser } from "@/src/lib/auth/sessions";
+import { resolveBusinessContext } from "@/src/lib/tenancy/context";
+import { tenancyErrorResponse } from "@/src/lib/tenancy/guards";
+import {
+  checkWhatsAppHealth,
+  disconnectWhatsApp,
+  getWhatsAppStatus,
+} from "@/src/lib/integrations/whatsapp/service";
+
+async function guard(businessId: string) {
+  const store = await cookies();
+  const user = await getSessionUser(store.get(SESSION_COOKIE_NAME)?.value);
+  if (!user) return { error: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
+  const resolved = await resolveBusinessContext(user.id, businessId);
+  if (!resolved.ok) {
+    return { error: NextResponse.json({ error: "Access denied for this business." }, { status: 403 }) };
+  }
+  return { user, context: resolved.context };
+}
+
+/**
+ * Redacted connection status. Contains display metadata only —
+ * token ciphertext is never serialized into a response.
+ */
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ businessId: string }> }
+) {
+  try {
+    const { businessId } = await params;
+    const g = await guard(businessId);
+    if ("error" in g) return g.error;
+    const status = await getWhatsAppStatus(g.context);
+    return NextResponse.json(status, { status: 200 });
+  } catch (err) {
+    return tenancyErrorResponse(err);
+  }
+}
+
+/**
+ * Disconnect: requires businesses.update (OWNER/ADMIN). Deletes stored
+ * credentials; the Meta-side number registration is untouched.
+ */
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ businessId: string }> }
+) {
+  try {
+    const { businessId } = await params;
+    const g = await guard(businessId);
+    if ("error" in g) return g.error;
+    const disconnected = await disconnectWhatsApp(g.context);
+    if (!disconnected) return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    return tenancyErrorResponse(err);
+  }
+}

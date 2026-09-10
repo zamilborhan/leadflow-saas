@@ -1,0 +1,125 @@
+[
+  {
+    "id": "table.MetaLeadEvent",
+    "label": "Create table \"MetaLeadEvent\"",
+    "summary": "Creates table \"MetaLeadEvent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "MetaLeadEvent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"MetaLeadEvent\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MetaLeadEvent\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"MetaLeadEvent\"",
+        "sql": "CREATE TABLE \"public\".\"MetaLeadEvent\" (\n  \"adId\" text,\n  \"adgroupId\" text,\n  \"attempts\" int4 DEFAULT 0 NOT NULL,\n  \"businessId\" character(36) NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"lastError\" text,\n  \"leadId\" character(36),\n  \"leadgenId\" text NOT NULL,\n  \"metaFormId\" text NOT NULL,\n  \"metaPageId\" text NOT NULL,\n  \"nextRetryAt\" timestamptz,\n  \"status\" text DEFAULT 'PENDING' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"MetaLeadEvent\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"MetaLeadEvent\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.Lead.Lead_businessId_facebookLeadId_key",
+    "label": "Add unique constraint on \"Lead\" (businessId, facebookLeadId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "Lead_businessId_facebookLeadId_key",
+        "table": "Lead"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"Lead_businessId_facebookLeadId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Lead_businessId_facebookLeadId_key",
+          "public",
+          "\"public\".\"Lead\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"Lead_businessId_facebookLeadId_key\"",
+        "sql": "ALTER TABLE \"public\".\"Lead\" ADD CONSTRAINT \"Lead_businessId_facebookLeadId_key\" UNIQUE (\"businessId\", \"facebookLeadId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"Lead_businessId_facebookLeadId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Lead_businessId_facebookLeadId_key",
+          "public",
+          "\"public\".\"Lead\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.MetaLeadEvent.MetaLeadEvent_businessId_leadgenId_key",
+    "label": "Add unique constraint on \"MetaLeadEvent\" (businessId, leadgenId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "MetaLeadEvent_businessId_leadgenId_key",
+        "table": "MetaLeadEvent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"MetaLeadEvent_businessId_leadgenId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MetaLeadEvent_businessId_leadgenId_key",
+          "public",
+          "\"public\".\"MetaLeadEvent\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"MetaLeadEvent_businessId_leadgenId_key\"",
+        "sql": "ALTER TABLE \"public\".\"MetaLeadEvent\" ADD CONSTRAINT \"MetaLeadEvent_businessId_leadgenId_key\" UNIQUE (\"businessId\", \"leadgenId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"MetaLeadEvent_businessId_leadgenId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "MetaLeadEvent_businessId_leadgenId_key",
+          "public",
+          "\"public\".\"MetaLeadEvent\""
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,164 @@
+[
+  {
+    "id": "table.LeadTemplateSelection",
+    "label": "Create table \"LeadTemplateSelection\"",
+    "summary": "Creates table \"LeadTemplateSelection\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "LeadTemplateSelection"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"LeadTemplateSelection\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"LeadTemplateSelection\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"LeadTemplateSelection\"",
+        "sql": "CREATE TABLE \"public\".\"LeadTemplateSelection\" (\n  \"businessId\" character(36) NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"leadId\" character(36) NOT NULL,\n  \"selectedBy\" character(36) NOT NULL,\n  \"templateLanguage\" text NOT NULL,\n  \"templateName\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"LeadTemplateSelection\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"LeadTemplateSelection\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.WhatsAppTemplate",
+    "label": "Create table \"WhatsAppTemplate\"",
+    "summary": "Creates table \"WhatsAppTemplate\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "WhatsAppTemplate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"WhatsAppTemplate\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WhatsAppTemplate\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"WhatsAppTemplate\"",
+        "sql": "CREATE TABLE \"public\".\"WhatsAppTemplate\" (\n  \"businessId\" character(36) NOT NULL,\n  \"category\" text,\n  \"componentsJson\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" character(36) NOT NULL,\n  \"language\" text NOT NULL,\n  \"name\" text NOT NULL,\n  \"status\" text NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"wabaId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"WhatsAppTemplate\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WhatsAppTemplate\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.LeadTemplateSelection.LeadTemplateSelection_businessId_leadId_key",
+    "label": "Add unique constraint on \"LeadTemplateSelection\" (businessId, leadId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "LeadTemplateSelection_businessId_leadId_key",
+        "table": "LeadTemplateSelection"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"LeadTemplateSelection_businessId_leadId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "LeadTemplateSelection_businessId_leadId_key",
+          "public",
+          "\"public\".\"LeadTemplateSelection\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"LeadTemplateSelection_businessId_leadId_key\"",
+        "sql": "ALTER TABLE \"public\".\"LeadTemplateSelection\" ADD CONSTRAINT \"LeadTemplateSelection_businessId_leadId_key\" UNIQUE (\"businessId\", \"leadId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"LeadTemplateSelection_businessId_leadId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "LeadTemplateSelection_businessId_leadId_key",
+          "public",
+          "\"public\".\"LeadTemplateSelection\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.WhatsAppTemplate.WhatsAppTemplate_businessId_name_language_key",
+    "label": "Add unique constraint on \"WhatsAppTemplate\" (businessId, name, language)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "WhatsAppTemplate_businessId_name_language_key",
+        "table": "WhatsAppTemplate"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"WhatsAppTemplate_businessId_name_language_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WhatsAppTemplate_businessId_name_language_key",
+          "public",
+          "\"public\".\"WhatsAppTemplate\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"WhatsAppTemplate_businessId_name_language_key\"",
+        "sql": "ALTER TABLE \"public\".\"WhatsAppTemplate\" ADD CONSTRAINT \"WhatsAppTemplate_businessId_name_language_key\" UNIQUE (\"businessId\", \"name\", \"language\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"WhatsAppTemplate_businessId_name_language_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WhatsAppTemplate_businessId_name_language_key",
+          "public",
+          "\"public\".\"WhatsAppTemplate\""
+        ]
+      }
+    ]
+  }
+]

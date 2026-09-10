@@ -1,0 +1,83 @@
+[
+  {
+    "id": "table.WhatsAppConnection",
+    "label": "Create table \"WhatsAppConnection\"",
+    "summary": "Creates table \"WhatsAppConnection\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "WhatsAppConnection"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"WhatsAppConnection\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WhatsAppConnection\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"WhatsAppConnection\"",
+        "sql": "CREATE TABLE \"public\".\"WhatsAppConnection\" (\n  \"accessTokenEncrypted\" text NOT NULL,\n  \"businessId\" character(36) NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"displayPhoneNumber\" text,\n  \"healthStatus\" text,\n  \"id\" character(36) NOT NULL,\n  \"lastCheckedAt\" timestamptz,\n  \"phoneNumberId\" text NOT NULL,\n  \"status\" text DEFAULT 'ACTIVE' NOT NULL,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"verifiedName\" text,\n  \"wabaId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"WhatsAppConnection\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WhatsAppConnection\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.WhatsAppConnection.WhatsAppConnection_businessId_key",
+    "label": "Add unique constraint on \"WhatsAppConnection\" (businessId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "WhatsAppConnection_businessId_key",
+        "table": "WhatsAppConnection"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"WhatsAppConnection_businessId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WhatsAppConnection_businessId_key",
+          "public",
+          "\"public\".\"WhatsAppConnection\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"WhatsAppConnection_businessId_key\"",
+        "sql": "ALTER TABLE \"public\".\"WhatsAppConnection\" ADD CONSTRAINT \"WhatsAppConnection_businessId_key\" UNIQUE (\"businessId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"WhatsAppConnection_businessId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WhatsAppConnection_businessId_key",
+          "public",
+          "\"public\".\"WhatsAppConnection\""
+        ]
+      }
+    ]
+  }
+]
