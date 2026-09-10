@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { forbidden, redirect } from "next/navigation";
 import { getCurrentUser } from "@/src/lib/auth/dal";
@@ -38,9 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <aside className="sticky top-0 hidden h-screen w-60 shrink-0 border-r border-slate-200 bg-slate-950 lg:block">
           <div className="flex h-full flex-col gap-4 overflow-y-auto px-4 py-6">
             <Link href="/admin" className="flex items-center gap-2.5 px-1" aria-label="LeadFlow super-admin home">
-              <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-lg bg-white text-lg font-bold text-slate-950">
-                L
-              </span>
+              <Image src="/icon.png" alt="" aria-hidden="true" width={36} height={36} className="size-9 rounded-lg" />
               <span className="flex flex-col leading-none">
                 <span className="text-[15px] font-bold text-white">LeadFlow</span>
                 <span className="text-[11px] font-semibold tracking-widest text-slate-400 uppercase">

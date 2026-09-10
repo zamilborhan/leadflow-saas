@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -5,9 +6,7 @@ import type { ReactNode } from "react";
 export function BrandMark({ compact }: { compact?: boolean }) {
   return (
     <Link href="/" className="inline-flex items-center gap-2.5" aria-label="LeadFlow BD home">
-      <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-lg bg-brand-600 text-lg font-bold text-white">
-        L
-      </span>
+      <Image src="/icon.png" alt="" aria-hidden="true" width={36} height={36} className="size-9 rounded-lg" />
       {!compact ? (
         <span className="flex flex-col leading-none">
           <span className="text-[15px] font-bold text-slate-900">LeadFlow</span>

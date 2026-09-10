@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/src/lib/cn";
@@ -91,9 +92,7 @@ function AdminIcon() {
 function Brand() {
   return (
     <Link href="/dashboard" className="flex items-center gap-2.5 px-2" aria-label="LeadFlow BD home">
-      <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-lg bg-brand-600 text-lg font-bold text-white">
-        L
-      </span>
+      <Image src="/icon.png" alt="" aria-hidden="true" width={36} height={36} className="size-9 rounded-lg" />
       <span className="flex flex-col leading-none">
         <span className="text-[15px] font-bold text-slate-900">LeadFlow</span>
         <span className="text-[11px] font-semibold tracking-widest text-brand-700 uppercase">Bangladesh</span>
