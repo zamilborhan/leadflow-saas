@@ -250,6 +250,14 @@ export default async function DashboardPage({
 
   return (
     <div className="flex flex-col gap-6">
+      {!user.emailVerifiedAt ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span className="font-semibold">Verify your email</span> to unlock all features.{" "}
+          <a href="/verify-email" className="font-semibold text-brand-700 hover:text-brand-800 hover:underline">
+            Verify now →
+          </a>
+        </div>
+      ) : null}
       <PageHeader
         title={business.name}
         description="Live pipeline metrics for this workspace."

@@ -244,6 +244,9 @@ after(async () => {
     await client.query(`DELETE FROM "BusinessMember" WHERE "businessId" IN (SELECT id FROM "Business" WHERE name LIKE '${RUN_TAG}%')`);
     await client.query(`DELETE FROM "Business" WHERE name LIKE '${RUN_TAG}%'`);
     await client.query(`DELETE FROM "Session" WHERE "userId" IN (SELECT id FROM "User" WHERE email LIKE '${RUN_TAG}%')`);
+    await client.query(`DELETE FROM "EmailVerificationToken" WHERE "userId" IN (SELECT id FROM "User" WHERE email LIKE '${RUN_TAG}%')`);
+    await client.query(`DELETE FROM "OAuthAccount" WHERE "userId" IN (SELECT id FROM "User" WHERE email LIKE '${RUN_TAG}%')`);
+    await client.query(`DELETE FROM "PasswordResetToken" WHERE "userId" IN (SELECT id FROM "User" WHERE email LIKE '${RUN_TAG}%')`);
     await client.query(`DELETE FROM "User" WHERE email LIKE '${RUN_TAG}%'`);
   } finally {
     await client.end();
@@ -254,23 +257,29 @@ async function registerAndLogin() {
   const email = testEmail();
   const reg = await api("POST", "/api/auth/register", { body: { email, password: PASSWORD } });
   assert.equal(reg.status, 201, `register failed: ${JSON.stringify(reg.json)}`);
+  assert.ok(reg.json.businessId, "register must return the auto-created businessId");
   const login = await api("POST", "/api/auth/login", { body: { email, password: PASSWORD } });
   assert.equal(login.status, 200, `login failed: ${JSON.stringify(login.json)}`);
-  return { email, cookie: login.cookie };
+  return { email, cookie: login.cookie, businessId: reg.json.businessId };
 }
 
 async function createBusiness(cookie, name, plan = "STARTER") {
-  const res = await api("POST", "/api/businesses", { body: { name }, cookie });
-  assert.equal(res.status, 201, `create business failed: ${JSON.stringify(res.json)}`);
+  // Registration auto-creates the workspace (FREE quota); adopt it and set
+  // the plan context the test needs. `name` is kept for call-site parity.
+  void name;
+  const list = await api("GET", "/api/businesses", { cookie });
+  assert.equal(list.status, 200);
+  assert.ok(list.json.businesses.length >= 1, "expected auto-created workspace");
+  const biz = list.json.businesses[0];
   // Quota context: these tests invite a second member, which exceeds FREE.
   if (plan) {
-    const s = await api("PATCH", `/api/businesses/${res.json.business.id}/subscription`, {
+    const s = await api("PATCH", `/api/businesses/${biz.id}/subscription`, {
       body: { planCode: plan },
       cookie,
     });
     assert.equal(s.status, 200, `set plan failed: ${JSON.stringify(s.json)}`);
   }
-  return res.json.business;
+  return biz;
 }
 
 describe("notification fan-out on assignment (HTTP)", () => {

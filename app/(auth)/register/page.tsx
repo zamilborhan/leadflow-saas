@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthLayout } from "@/src/components/layout/auth-layout";
+import { OAuthButtons } from "@/src/components/auth/oauth-buttons";
 import { Button } from "@/src/components/ui/button";
 import { Field, Input } from "@/src/components/ui/input";
 
@@ -24,7 +25,11 @@ export default function RegisterPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name: name || undefined, email, password }),
       });
-      const data = (await res.json()) as { error?: string; errors?: Record<string, string> };
+      const data = (await res.json()) as {
+        error?: string;
+        errors?: Record<string, string>;
+        businessId?: string;
+      };
       if (!res.ok) {
         setError(
           data.error ??
@@ -32,7 +37,7 @@ export default function RegisterPage() {
         );
         return;
       }
-      router.push("/dashboard");
+      router.push(data.businessId ? `/dashboard?businessId=${data.businessId}` : "/dashboard");
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -44,7 +49,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Start your 14-day free trial. No credit card required."
+      subtitle="Start your 14-day free trial. A workspace is created automatically."
       footer={
         <>
           Have an account?{" "}
@@ -55,6 +60,12 @@ export default function RegisterPage() {
       }
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <OAuthButtons mode="register" />
+        <div aria-hidden="true" className="flex items-center gap-3 text-xs text-slate-400">
+          <span className="h-px flex-1 bg-slate-200" />
+          or with email
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
         <Field label="Name" hint="Optional — shown to your teammates.">
           <Input
             type="text"

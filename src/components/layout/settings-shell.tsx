@@ -7,6 +7,7 @@ import { PageHeader } from "@/src/components/ui/page-header";
 
 const TABS = [
   { label: "General", href: "/dashboard/settings" },
+  { label: "Profile", href: "/dashboard/settings/profile" },
   { label: "Team", href: "/dashboard/settings/team" },
   { label: "Billing", href: "/dashboard/settings/billing" },
   { label: "Integrations", href: "/dashboard/settings/integrations" },

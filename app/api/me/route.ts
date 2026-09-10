@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
-import { meService } from "@/src/lib/auth/service";
+import { meService, updateProfileService } from "@/src/lib/auth/service";
 import { SESSION_COOKIE_NAME } from "@/src/lib/auth/cookies";
-import { applyServiceResult, internalError } from "@/src/lib/auth/http";
+import { applyServiceResult, internalError, readJsonBody } from "@/src/lib/auth/http";
 
 export async function GET() {
   try {
@@ -10,5 +10,18 @@ export async function GET() {
     return applyServiceResult(result);
   } catch (err) {
     return internalError("me", err);
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const store = await cookies();
+    const result = await updateProfileService(
+      store.get(SESSION_COOKIE_NAME)?.value,
+      await readJsonBody(req)
+    );
+    return applyServiceResult(result);
+  } catch (err) {
+    return internalError("me-update", err);
   }
 }

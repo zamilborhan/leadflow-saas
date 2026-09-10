@@ -130,8 +130,12 @@ after(async () => {
     const { rows } = await client.query(`SELECT id FROM "User" WHERE email LIKE '${RUN_TAG}%'`);
     const ids = rows.map((r) => r.id);
     if (ids.length > 0) {
+      await client.query(`DELETE FROM "EmailVerificationToken" WHERE "userId" = ANY($1)`, [ids]);
+      await client.query(`DELETE FROM "OAuthAccount" WHERE "userId" = ANY($1)`, [ids]);
       await client.query(`DELETE FROM "PasswordResetToken" WHERE "userId" = ANY($1)`, [ids]);
       await client.query(`DELETE FROM "Session" WHERE "userId" = ANY($1)`, [ids]);
+      await client.query(`DELETE FROM "BusinessMember" WHERE "userId" = ANY($1)`, [ids]);
+      await client.query(`DELETE FROM "Business" WHERE "ownerId" = ANY($1)`, [ids]);
       await client.query(`DELETE FROM "User" WHERE id = ANY($1)`, [ids]);
     }
   } finally {

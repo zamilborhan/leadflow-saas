@@ -46,6 +46,14 @@ export const env = {
     return required("NEXTAUTH_SECRET");
   },
 
+  /**
+   * Public app URL used to build email links (verification, reset) and
+   * OAuth redirect URIs. Falls back to NEXTAUTH_URL for backwards compat.
+   */
+  get appUrl(): string {
+    return read("APP_URL") ?? read("NEXTAUTH_URL") ?? "http://localhost:3000";
+  },
+
   /** Meta (Facebook) app ID for Lead Ads OAuth. Server-only — never expose to clients. */
   get metaAppId(): string {
     return required("META_APP_ID");
@@ -120,6 +128,42 @@ export const env = {
       if (email.length > 0) seen.add(email);
     }
     return [...seen].sort();
+  },
+
+  // --- User-auth OAuth (Google/Facebook sign-in). Optional: when unset the
+  // provider button is hidden and the authorize route returns 503 with a
+  // clear operator message instead of crashing boot. Never expose secrets
+  // to client components.
+  get googleClientId(): string | undefined {
+    return read("GOOGLE_CLIENT_ID");
+  },
+
+  get googleClientSecret(): string | undefined {
+    return read("GOOGLE_CLIENT_SECRET");
+  },
+
+  /** Facebook Login for user auth. Falls back to the Lead Ads app when no
+   * dedicated login app is configured (same Meta app can serve both). */
+  get facebookClientId(): string | undefined {
+    return read("FACEBOOK_CLIENT_ID") ?? read("META_APP_ID");
+  },
+
+  get facebookClientSecret(): string | undefined {
+    return read("FACEBOOK_CLIENT_SECRET") ?? read("META_APP_SECRET");
+  },
+
+  // --- Outbound email. `log` (default) prints to server logs for local dev;
+  // `resend` posts to api.resend.com. No new npm dependency: Resend over fetch.
+  get mailProvider(): string {
+    return read("MAIL_PROVIDER") ?? "log";
+  },
+
+  get mailFrom(): string {
+    return read("MAIL_FROM") ?? "LeadFlow BD <no-reply@localhost>";
+  },
+
+  get resendApiKey(): string | undefined {
+    return read("RESEND_API_KEY");
   },
 };
 

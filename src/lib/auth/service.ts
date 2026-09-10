@@ -9,12 +9,15 @@ import {
   validateLogin,
   validateForgotPassword,
   validateResetPassword,
+  validateProfileUpdate,
 } from "./validation";
 import { authRateLimiter, RATE_LIMITS } from "./rate-limit";
 import {
   createUser,
   findUserByEmail,
+  findUserById,
   toPublicUser,
+  toUserId,
 } from "./users";
 import {
   createSession,
@@ -25,6 +28,12 @@ import {
   requestPasswordReset,
   consumePasswordResetToken,
 } from "./password-reset";
+import {
+  requestVerification,
+  consumeVerificationToken,
+} from "./verification";
+import { sendMail } from "../mail/mailer";
+import { resetMail, resetUrl, verificationMail, verificationUrl } from "../mail/templates";
 
 export interface ServiceResult {
   status: number;
@@ -40,6 +49,9 @@ const GENERIC_LOGIN_FAILURE = "Invalid email or password.";
 const GENERIC_RESET_RESPONSE =
   "If an account exists for this email, a password reset link has been sent.";
 const GENERIC_RESET_FAILURE = "Invalid or expired reset token.";
+const GENERIC_VERIFY_RESPONSE =
+  "If an account exists for this email, a verification link has been sent.";
+const GENERIC_VERIFY_FAILURE = "Invalid or expired verification link.";
 
 function rateLimited(retryAfterMs: number): ServiceResult {
   return {
@@ -69,9 +81,37 @@ export async function registerService(input: unknown, ip: string): Promise<Servi
     passwordHash,
   });
   const session = await createSession(user.id);
+
+  // Workspace auto-creation (onboarding decision: automatic). Best-effort:
+  // quota failures leave the user without a workspace and the dashboard
+  // empty-state guides manual creation.
+  let businessId: string | null = null;
+  try {
+    const { ensureRoleSeeds } = await import("../tenancy/seeds");
+    const { createBusiness } = await import("../tenancy/businesses");
+    await ensureRoleSeeds();
+    const base = parsed.value.name?.trim() || parsed.value.email.split("@")[0] || "My";
+    const business = await createBusiness(user.id, `${base}'s workspace`.slice(0, 120));
+    businessId = business.id;
+  } catch (err) {
+    console.warn("[auth] auto workspace creation skipped", {
+      message: err instanceof Error ? err.message : "unknown",
+    });
+  }
+
+  // Verification email (out-of-band; never in the response body).
+  try {
+    const { token } = await requestVerification(user.email);
+    if (token) await sendMail(verificationMail(user.email, verificationUrl(token)));
+  } catch (err) {
+    console.warn("[auth] verification mail skipped", {
+      message: err instanceof Error ? err.message : "unknown",
+    });
+  }
+
   return {
     status: 201,
-    body: { user: toPublicUser(user) },
+    body: { user: toPublicUser(user), ...(businessId ? { businessId } : {}) },
     setCookie: {
       value: session.cookieValue,
       maxAge: Math.floor((session.expiresAtMs - Date.now()) / 1000),
@@ -100,6 +140,11 @@ export async function loginService(input: unknown, ip: string): Promise<ServiceR
     await dummyVerify(parsed.value.password);
     return { status: 401, body: { error: GENERIC_LOGIN_FAILURE } };
   }
+  // OAuth-only accounts have no password: same generic failure, no enumeration.
+  if (!user.passwordHash) {
+    await dummyVerify(parsed.value.password);
+    return { status: 401, body: { error: GENERIC_LOGIN_FAILURE } };
+  }
   const ok = await verifyPassword(parsed.value.password, user.passwordHash);
   if (!ok) {
     return { status: 401, body: { error: GENERIC_LOGIN_FAILURE } };
@@ -114,6 +159,7 @@ export async function loginService(input: unknown, ip: string): Promise<ServiceR
         name: user.name,
         status: user.status,
         createdAt: user.createdAt,
+        emailVerifiedAt: user.emailVerifiedAt,
       }),
     },
     setCookie: {
@@ -139,11 +185,14 @@ export async function forgotPasswordService(input: unknown, ip: string): Promise
 
   const { token } = await requestPasswordReset(parsed.value.email);
   if (token) {
-    // Email delivery integration point: hand `token` to the mail provider
-    // inside a single-use reset URL. There is no provider configured yet,
-    // so the token is intentionally dropped here — it MUST NOT be returned
-    // in the HTTP response. See docs/DEVELOPMENT.md.
-    void token;
+    // Delivered out of band via the mail provider — never in the response.
+    try {
+      await sendMail(resetMail(parsed.value.email, resetUrl(token)));
+    } catch (err) {
+      console.warn("[auth] reset mail failed", {
+        message: err instanceof Error ? err.message : "unknown",
+      });
+    }
   }
   return { status: 200, body: { message: GENERIC_RESET_RESPONSE } };
 }
@@ -168,4 +217,77 @@ export async function meService(cookieValue: string | undefined | null): Promise
   const user = await getSessionUser(cookieValue);
   if (!user) return { status: 401, body: { error: "Not authenticated." } };
   return { status: 200, body: { user: toPublicUser(user) } };
+}
+
+export async function requestVerificationService(
+  input: unknown,
+  ip: string
+): Promise<ServiceResult> {
+  const parsed = validateForgotPassword(input);
+  if (!parsed.ok || !parsed.value) return { status: 422, body: { errors: parsed.errors } };
+
+  const budget = RATE_LIMITS.forgotPassword;
+  const decision = authRateLimiter.check(`verify:${ip}`, budget.limit, budget.windowMs);
+  if (!decision.allowed) return rateLimited(decision.retryAfterMs);
+
+  const { token } = await requestVerification(parsed.value.email);
+  if (token) {
+    try {
+      await sendMail(verificationMail(parsed.value.email, verificationUrl(token)));
+    } catch (err) {
+      console.warn("[auth] verification mail failed", {
+        message: err instanceof Error ? err.message : "unknown",
+      });
+    }
+  }
+  return { status: 200, body: { message: GENERIC_VERIFY_RESPONSE } };
+}
+
+export async function confirmVerificationService(
+  input: unknown,
+  ip: string
+): Promise<ServiceResult> {
+  const token =
+    typeof input === "object" && input !== null
+      ? String((input as Record<string, unknown>)["token"] ?? "").trim()
+      : "";
+  if (token.length < 16 || token.length > 256) {
+    return { status: 400, body: { error: GENERIC_VERIFY_FAILURE } };
+  }
+  const budget = RATE_LIMITS.resetPassword;
+  const decision = authRateLimiter.check(`verify-confirm:${ip}`, budget.limit, budget.windowMs);
+  if (!decision.allowed) return rateLimited(decision.retryAfterMs);
+
+  const outcome = await consumeVerificationToken(token);
+  if (!outcome.ok) return { status: 400, body: { error: GENERIC_VERIFY_FAILURE } };
+  return { status: 200, body: { message: "Email verified. You can now use all features." } };
+}
+
+export async function updateProfileService(
+  cookieValue: string | undefined | null,
+  input: unknown
+): Promise<ServiceResult> {
+  const sessionUser = await getSessionUser(cookieValue);
+  if (!sessionUser) return { status: 401, body: { error: "Not authenticated." } };
+  const parsed = validateProfileUpdate(input);
+  if (!parsed.ok || !parsed.value) return { status: 422, body: { errors: parsed.errors } };
+
+  const { UserTable } = await import("../../prisma/tables");
+  const uid = toUserId(sessionUser.id);
+  const patch: { name?: string | null; passwordHash?: string } = {};
+  if (parsed.value.name !== undefined) patch.name = parsed.value.name;
+  if (parsed.value.newPassword !== undefined) {
+    const full = await findUserByEmail(sessionUser.email);
+    if (full?.passwordHash) {
+      const ok = await verifyPassword(parsed.value.currentPassword ?? "", full.passwordHash);
+      if (!ok) return { status: 401, body: { error: "Current password is incorrect." } };
+    }
+    patch.passwordHash = await hashPassword(parsed.value.newPassword);
+  }
+  if (Object.keys(patch).length > 0) {
+    await UserTable.where({ id: uid }).update(patch);
+  }
+  const fresh = await findUserById(sessionUser.id);
+  if (!fresh) return { status: 401, body: { error: "Not authenticated." } };
+  return { status: 200, body: { user: toPublicUser(fresh) } };
 }

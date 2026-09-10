@@ -80,6 +80,7 @@ export function Header({ userEmail, onMenuClick }: HeaderProps) {
             </span>
           }
           items={[
+            { label: "Profile", href: "/dashboard/settings/profile" },
             { label: "Settings", href: "/dashboard/settings" },
             { label: "Log out", onSelect: logout, danger: true },
           ]}

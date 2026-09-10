@@ -22,17 +22,18 @@ export interface UserDTO {
   name: string | null;
   status: string;
   createdAt: string;
+  emailVerifiedAt: string | null;
 }
 
 export interface UserWithHash extends UserDTO {
-  passwordHash: string;
+  passwordHash: string | null;
 }
 
-const PUBLIC_FIELDS = ["id", "email", "name", "status", "createdAt"] as const;
+const PUBLIC_FIELDS = ["id", "email", "name", "status", "createdAt", "emailVerifiedAt"] as const;
 
 export async function findUserByEmail(email: string): Promise<UserWithHash | null> {
   const row = await UserTable.where({ email })
-    .select("id", "email", "name", "status", "createdAt", "passwordHash")
+    .select("id", "email", "name", "status", "createdAt", "emailVerifiedAt", "passwordHash")
     .first();
   if (!row) return null;
   return {
@@ -41,6 +42,7 @@ export async function findUserByEmail(email: string): Promise<UserWithHash | nul
     name: row.name,
     status: row.status,
     createdAt: row.createdAt,
+    emailVerifiedAt: row.emailVerifiedAt,
     passwordHash: row.passwordHash,
   };
 }
@@ -54,7 +56,7 @@ export async function findActiveUserById(id: string | UserId): Promise<UserDTO |
 /** Public user lookup by id, any status. Never returns passwordHash. */
 export async function findUserById(id: string | UserId): Promise<UserDTO | null> {
   const row = await UserTable.where({ id: typeof id === "string" ? toUserId(id) : id })
-    .select("id", "email", "name", "status", "createdAt")
+    .select("id", "email", "name", "status", "createdAt", "emailVerifiedAt")
     .first();
   if (!row) return null;
   return {
@@ -63,20 +65,33 @@ export async function findUserById(id: string | UserId): Promise<UserDTO | null>
     name: row.name,
     status: row.status,
     createdAt: row.createdAt,
+    emailVerifiedAt: row.emailVerifiedAt,
   };
 }
 
 export interface CreateUserInput {
   email: string;
   name?: string;
-  passwordHash: string;
+  passwordHash?: string | null;
+  emailVerifiedAt?: string | null;
 }
 
 export async function createUser(input: CreateUserInput): Promise<UserDTO> {
-  const row = await UserTable.select("id", "email", "name", "status", "createdAt").create({
+  const row = await UserTable.select(
+    "id",
+    "email",
+    "name",
+    "status",
+    "createdAt",
+    "emailVerifiedAt"
+  ).create({
     email: input.email,
     ...(input.name !== undefined ? { name: input.name } : {}),
-    passwordHash: input.passwordHash,
+    // OAuth-only accounts store null; password login refuses null hashes.
+    ...(input.passwordHash !== undefined ? { passwordHash: input.passwordHash } : {}),
+    ...(input.emailVerifiedAt !== undefined && input.emailVerifiedAt !== null
+      ? { emailVerifiedAt: input.emailVerifiedAt }
+      : {}),
     status: "ACTIVE",
   });
   return {
@@ -85,6 +100,7 @@ export async function createUser(input: CreateUserInput): Promise<UserDTO> {
     name: row.name,
     status: row.status,
     createdAt: row.createdAt,
+    emailVerifiedAt: row.emailVerifiedAt,
   };
 }
 
@@ -97,9 +113,19 @@ export async function updateUserPassword(
   });
 }
 
-/** Narrow DTO for API responses — id, email, name only. */
-export function toPublicUser(user: UserDTO): { id: string; email: string; name: string | null } {
-  return { id: user.id, email: user.email, name: user.name };
+/** Narrow DTO for API responses — id, email, name + verification flag. */
+export function toPublicUser(user: UserDTO): {
+  id: string;
+  email: string;
+  name: string | null;
+  emailVerified: boolean;
+} {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    emailVerified: user.emailVerifiedAt !== null,
+  };
 }
 
 export { PUBLIC_FIELDS };

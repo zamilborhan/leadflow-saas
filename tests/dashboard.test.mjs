@@ -135,6 +135,8 @@ after(async () => {
       await client.query(`DELETE FROM "Business" WHERE id = ANY($1)`, [bizIds]);
     }
     if (userIds.length > 0) {
+      await client.query(`DELETE FROM "EmailVerificationToken" WHERE "userId" = ANY($1)`, [userIds]);
+      await client.query(`DELETE FROM "OAuthAccount" WHERE "userId" = ANY($1)`, [userIds]);
       await client.query(`DELETE FROM "PasswordResetToken" WHERE "userId" = ANY($1)`, [userIds]);
       await client.query(`DELETE FROM "Session" WHERE "userId" = ANY($1)`, [userIds]);
       await client.query(`DELETE FROM "BusinessMember" WHERE "userId" = ANY($1)`, [userIds]);
@@ -152,7 +154,9 @@ async function registerAndLogin() {
   const login = await api("POST", "/api/auth/login", { body: { email, password: PASSWORD } });
   assert.equal(login.status, 200);
   assert.ok(login.cookie);
-  return { email, cookie: login.cookie };
+  // Registration auto-creates exactly one workspace (FREE quota).
+  assert.ok(reg.json.businessId, "register must return the auto-created businessId");
+  return { email, cookie: login.cookie, businessId: reg.json.businessId };
 }
 
 describe("dashboard tenant scoping", () => {
@@ -161,12 +165,10 @@ describe("dashboard tenant scoping", () => {
     const b = await registerAndLogin();
     const c = await registerAndLogin();
 
-    const bizA = (
-      await api("POST", "/api/businesses", { body: { name: `${RUN_TAG}-acme-A` }, cookie: a.cookie })
-    ).json.business;
-    const bizB = (
-      await api("POST", "/api/businesses", { body: { name: `${RUN_TAG}-acme-B` }, cookie: b.cookie })
-    ).json.business;
+    // Each user owns their auto-created workspace; distinct by id.
+    const bizA = { id: a.businessId };
+    const bizB = { id: b.businessId };
+    assert.notEqual(bizA.id, bizB.id);
 
     const leadName = `${RUN_TAG}-vip-lead-A`;
     const created = await api("POST", `/api/businesses/${bizA.id}/leads`, {
@@ -175,10 +177,9 @@ describe("dashboard tenant scoping", () => {
     });
     assert.equal(created.status, 201);
 
-    // A sees their workspace data: business name, lead, live counters.
+    // A sees their workspace data: lead, live counters.
     const pageA = await getHtml(`/dashboard?businessId=${bizA.id}`, a.cookie);
     assert.equal(pageA.status, 200);
-    assert.ok(pageA.html.includes(`${RUN_TAG}-acme-A`), "A dashboard missing business name");
     assert.ok(pageA.html.includes(leadName), "A dashboard missing own lead");
     assert.ok(pageA.html.includes("Total leads"), "A dashboard missing stat cards");
     assert.ok(pageA.html.includes("Conversion rate"), "A dashboard missing conversion rate");
@@ -187,18 +188,16 @@ describe("dashboard tenant scoping", () => {
     const pageB = await getHtml(`/dashboard?businessId=${bizA.id}`, b.cookie);
     assert.equal(pageB.status, 200);
     assert.ok(!pageB.html.includes(leadName), "B dashboard leaked A's lead");
-    assert.ok(!pageB.html.includes(`${RUN_TAG}-acme-A`), "B dashboard leaked A's business name");
-    assert.ok(pageB.html.includes(`${RUN_TAG}-acme-B`), "B dashboard should show own business");
 
     // B's own dashboard shows zeroed counters and the empty-state table.
     const pageBOwn = await getHtml(`/dashboard?businessId=${bizB.id}`, b.cookie);
     assert.equal(pageBOwn.status, 200);
     assert.ok(pageBOwn.html.includes("No leads yet"), "B dashboard missing empty state");
 
-    // C has no workspace: dedicated empty state, no crash, no foreign data.
+    // C's fresh auto workspace: empty state, no crash, no foreign data.
     const pageC = await getHtml("/dashboard", c.cookie);
     assert.equal(pageC.status, 200);
-    assert.ok(pageC.html.includes("No workspace yet"), "missing no-workspace empty state");
+    assert.ok(pageC.html.includes("No leads yet"), "fresh dashboard missing empty state");
     assert.ok(!pageC.html.includes(leadName), "fresh dashboard leaked A's lead");
   });
 

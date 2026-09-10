@@ -9,7 +9,13 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
       id: field.id.uuidv7String(),
       email: field.text().unique(),
       name: field.text().optional(),
-      passwordHash: field.text(),
+      // Nullable: OAuth-only accounts (Google/Facebook) have no password
+      // until the user sets one via reset/profile. Password login refuses
+      // null hashes with the generic failure (no enumeration).
+      passwordHash: field.text().optional(),
+      // ISO timestamp of verified email, null = unverified. Providers that
+      // verify (Google/Facebook) set this at link time.
+      emailVerifiedAt: field.temporal.timestamptzString().optional(),
       status: field.text().default('ACTIVE'),
       createdAt: field.temporal.createdAtString(),
       updatedAt: field.temporal.updatedAtString(),
@@ -34,6 +40,40 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
       id: field.id.uuidv7String(),
       userId: field.uuidString(),
       // SHA-256 hex of the opaque reset token. Single-use, short-lived.
+      tokenHash: field.text().unique(),
+      expiresAt: field.temporal.timestamptzString(),
+      usedAt: field.temporal.timestamptzString().optional(),
+      createdAt: field.temporal.createdAtString(),
+    },
+  });
+
+  // Social login link: one row per (user, provider). (provider,
+  // providerUserId) is globally unique so a Google/Facebook account can
+  // only ever attach to a single LeadFlow user. `email` snapshots the
+  // provider-reported address at link time for debugging only.
+  const OAuthAccount = model('OAuthAccount', {
+    fields: {
+      id: field.id.uuidv7String(),
+      userId: field.uuidString(),
+      provider: field.text(),
+      providerUserId: field.text(),
+      email: field.text().optional(),
+      createdAt: field.temporal.createdAtString(),
+      updatedAt: field.temporal.updatedAtString(),
+    },
+  }).attributes(({ fields, constraints }) => ({
+    uniques: [
+      constraints.unique([fields.provider, fields.providerUserId]),
+      constraints.unique([fields.userId, fields.provider]),
+    ],
+  }));
+
+  // Email verification token: opaque, single-use, 24h. Only the SHA-256
+  // hash is stored; the raw token travels in the verification link.
+  const EmailVerificationToken = model('EmailVerificationToken', {
+    fields: {
+      id: field.id.uuidv7String(),
+      userId: field.uuidString(),
       tokenHash: field.text().unique(),
       expiresAt: field.temporal.timestamptzString(),
       usedAt: field.temporal.timestamptzString().optional(),
@@ -573,6 +613,8 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
       User: User.relations({
         sessions: rel.hasMany(Session, { by: 'userId' }),
         passwordResetTokens: rel.hasMany(PasswordResetToken, { by: 'userId' }),
+        oAuthAccounts: rel.hasMany(OAuthAccount, { by: 'userId' }),
+        emailVerificationTokens: rel.hasMany(EmailVerificationToken, { by: 'userId' }),
         ownedBusinesses: rel.hasMany(Business, { by: 'ownerId' }),
         memberships: rel.hasMany(BusinessMember, { by: 'userId' }),
       }),
@@ -580,6 +622,12 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
         user: rel.belongsTo(User, { from: 'userId', to: 'id' }),
       }),
       PasswordResetToken: PasswordResetToken.relations({
+        user: rel.belongsTo(User, { from: 'userId', to: 'id' }),
+      }),
+      OAuthAccount: OAuthAccount.relations({
+        user: rel.belongsTo(User, { from: 'userId', to: 'id' }),
+      }),
+      EmailVerificationToken: EmailVerificationToken.relations({
         user: rel.belongsTo(User, { from: 'userId', to: 'id' }),
       }),
       Business: Business.relations({

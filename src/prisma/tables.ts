@@ -11,6 +11,8 @@ import { db } from "./db";
 export const UserTable = db.orm.public.User;
 export const SessionTable = db.orm.public.Session;
 export const PasswordResetTokenTable = db.orm.public.PasswordResetToken;
+export const OAuthAccountTable = db.orm.public.OAuthAccount;
+export const EmailVerificationTokenTable = db.orm.public.EmailVerificationToken;
 export const BusinessTable = db.orm.public.Business;
 export const BusinessMemberTable = db.orm.public.BusinessMember;
 export const RoleTable = db.orm.public.Role;

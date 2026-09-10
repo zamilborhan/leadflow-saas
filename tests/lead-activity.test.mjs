@@ -136,6 +136,8 @@ after(async () => {
       await client.query(`DELETE FROM "Business" WHERE id = ANY($1)`, [bizIds]);
     }
     if (userIds.length > 0) {
+      await client.query(`DELETE FROM "EmailVerificationToken" WHERE "userId" = ANY($1)`, [userIds]);
+      await client.query(`DELETE FROM "OAuthAccount" WHERE "userId" = ANY($1)`, [userIds]);
       await client.query(`DELETE FROM "PasswordResetToken" WHERE "userId" = ANY($1)`, [userIds]);
       await client.query(`DELETE FROM "Session" WHERE "userId" = ANY($1)`, [userIds]);
       await client.query(`DELETE FROM "BusinessMember" WHERE "userId" = ANY($1)`, [userIds]);
@@ -150,18 +152,24 @@ async function registerAndLogin() {
   const email = testEmail();
   const reg = await api("POST", "/api/auth/register", { body: { email, password: PASSWORD } });
   assert.equal(reg.status, 201, `register failed: ${JSON.stringify(reg.json)}`);
+  assert.ok(reg.json.businessId, "register must return the auto-created businessId");
   const login = await api("POST", "/api/auth/login", { body: { email, password: PASSWORD } });
   assert.equal(login.status, 200);
   assert.ok(login.cookie);
-  return { email, cookie: login.cookie };
+  return { email, cookie: login.cookie, businessId: reg.json.businessId };
 }
 
 async function createBusiness(cookie, name, plan = "STARTER") {
-  const r = await api("POST", "/api/businesses", { body: { name }, cookie });
-  assert.equal(r.status, 201, `create business failed: ${JSON.stringify(r.json)}`);
+  // Registration auto-creates the workspace (FREE quota); adopt it and set
+  // the plan context the test needs. `name` is kept for call-site parity.
+  void name;
+  const list = await api("GET", "/api/businesses", { cookie });
+  assert.equal(list.status, 200);
+  assert.ok(list.json.businesses.length >= 1, "expected auto-created workspace");
+  const biz = list.json.businesses[0];
   // Quota context: these tests invite a second member, which exceeds FREE.
   if (plan) {
-    const s = await api("PATCH", `/api/businesses/${r.json.business.id}/subscription`, {
+    const s = await api("PATCH", `/api/businesses/${biz.id}/subscription`, {
       body: { planCode: plan },
       cookie,
     });
@@ -169,8 +177,8 @@ async function createBusiness(cookie, name, plan = "STARTER") {
   }
   // Isolation: default NEW_LEAD automations would reassign leads and append
   // timeline entries, breaking exact-count assertions below.
-  await disableAutomations(cookie, r.json.business.id);
-  return r.json.business;
+  await disableAutomations(cookie, biz.id);
+  return biz;
 }
 
 async function disableAutomations(cookie, businessId) {
