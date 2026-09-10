@@ -10,12 +10,20 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE_NAME } from "./cookies";
 import { getSessionUser } from "./sessions";
+import { getSupabaseUser } from "./supabase-user";
 import type { UserDTO } from "./users";
 
-/** Secure check: current user DTO, or null when unauthenticated. */
+/**
+ * Secure check: current user DTO, or null when unauthenticated.
+ * Database sessions (`lf_session`) are checked first; Supabase sessions are
+ * the fallback so Supabase-authenticated visitors reach the same pages and
+ * guards. Unconfigured Supabase resolves to null with no network call.
+ */
 export async function getCurrentUser(): Promise<UserDTO | null> {
   const store = await cookies();
-  return getSessionUser(store.get(SESSION_COOKIE_NAME)?.value);
+  const legacy = await getSessionUser(store.get(SESSION_COOKIE_NAME)?.value);
+  if (legacy) return legacy;
+  return getSupabaseUser();
 }
 
 /**

@@ -16,6 +16,8 @@
   "dependencies": {
     "@prisma/client": "^7.10.0",
     "@prisma/orm-postgres": "^8.0.0-rc.8",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.116.0",
     "dotenv": "^17.4.2",
     "next": "16.3.4",
     "prisma": "^8.0.0-rc.13",

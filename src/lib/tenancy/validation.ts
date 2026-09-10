@@ -21,7 +21,13 @@ export function validateBusinessName(input: unknown): ValidationResult<{ name: s
     return fail({ name: "Business name is required." });
   }
   const name = raw.trim();
+  if (name.length < 2) return fail({ name: "Business name must be at least 2 characters." });
   if (name.length > 120) return fail({ name: "Business name must be 120 characters or fewer." });
+  // Unicode-aware: names in any script (e.g. Bengali) pass as long as they
+  // contain at least one letter or number — pure punctuation is rejected.
+  if (!/[\p{L}\p{N}]/u.test(name)) {
+    return fail({ name: "Business name must include a letter or number." });
+  }
   return { ok: true, value: { name }, errors: {} };
 }
 

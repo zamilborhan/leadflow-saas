@@ -3,17 +3,16 @@
  * Translates auth + workspace context failures into HTTP responses.
  * Server-only: reads next/headers cookies like the auth DAL.
  */
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "../auth/cookies";
-import { getSessionUser } from "../auth/sessions";
+import { getCurrentUser } from "../auth/dal";
 import type { UserDTO } from "../auth/users";
 import { getRequestedBusinessId, resolveBusinessContext, type BusinessContext } from "./context";
 import { TenantAccessDenied, TenantConflict, TenantLimitExceeded, TenantNotFound } from "./policies";
 
 export async function requireUser(): Promise<{ user: UserDTO } | { response: NextResponse }> {
-  const store = await cookies();
-  const user = await getSessionUser(store.get(SESSION_COOKIE_NAME)?.value);
+  // Bridged: database session first, Supabase session fallback (null when
+  // Supabase is unconfigured, so existing behavior is unchanged there).
+  const user = await getCurrentUser();
   if (!user) {
     return { response: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
   }

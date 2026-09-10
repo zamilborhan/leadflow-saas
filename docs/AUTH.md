@@ -85,6 +85,87 @@ OWNER membership (best-effort: quota failures keep the account and the
 dashboard empty-state guides manual creation). The register response carries
 `businessId` for direct redirect.
 
+## Supabase email/password auth (current UI layer)
+
+The `(auth)` pages (`/login`, `/register`, `/forgot-password`,
+`/reset-password`, `/verify-email`) sign in through Supabase Auth — passwords
+never touch LeadFlow code. Reusable clients live in `src/lib/supabase/`:
+
+- `client.ts` (browser), `server.ts` (RSC/Route Handlers), `middleware.ts`
+  (`updateSupabaseSession`, called by `proxy.ts` on pass-through requests).
+- `GET /auth/callback` exchanges email-confirmation and recovery codes for a
+  session (`?next=` restricted to local paths).
+- Registration stores the full name in `auth.users` metadata (`full_name`)
+  and shows an inline check-email state when confirmation is on — unverified
+  users are never pushed into the dashboard.
+- Logout (`signOutEverywhere` in `src/components/auth/logout-button.tsx`)
+  clears both the Supabase session and the legacy `lf_session` cookie.
+
+Coexistence with the legacy database session system:
+- `proxy.ts` treats a valid Supabase session as signed-in; `getCurrentUser()`
+  (DAL) and `requireUser()` (tenancy guards) fall back to the Supabase user
+  mapped onto `UserDTO`, so Supabase users reach `/dashboard` and the
+  workspace APIs with unchanged tenant isolation (all scoping stays keyed by
+  user id). With Supabase unconfigured every fallback resolves to null with
+  no network call, so existing behavior and tests are untouched.
+- Still legacy-only: `/api/auth/*`, `/api/me`, and team invite-by-email
+  (invites look up the local `User` table, so inviting a Supabase-only user
+  by email fails until user sync lands). Migrating those is the next step.
+
+## Google OAuth (via Supabase)
+
+One shared flow for login and registration (`GoogleOAuthButton` in
+`src/components/auth/oauth-buttons.tsx`, rendered on both pages):
+
+1. `signInWithOAuth({ provider: "google" })` with `redirectTo` derived from
+   `window.location.origin` → `/auth/callback?next=…` (no hardcoded hosts).
+2. Google returns to `/auth/callback`, which exchanges the code for a session.
+   Existing Google account → signed in; new one → Supabase creates the user
+   (verified email, `full_name` metadata) — never a duplicate, never a
+   password in our code.
+3. Default destinations are workspace-aware: zero owned workspaces →
+   `/create-workspace` (protected page with its own creation form); otherwise
+   `/dashboard`. Explicit deep links are always respected.
+
+Required console configuration (no new app env vars):
+
+- Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client
+  (Web application): authorized redirect URI
+  `https://<project-ref>.supabase.co/auth/v1/callback`.
+- Supabase Dashboard → Authentication → Providers → Google: enable with that
+  Client ID + Client Secret.
+- Supabase Dashboard → Authentication → URL Configuration: Site URL plus
+  Redirect URLs allowlist entries for every origin, each with
+  `/auth/callback` (e.g. `http://localhost:3000/auth/callback`,
+  `https://app.example.com/auth/callback`).
+
+## Facebook OAuth (via Supabase)
+
+Same shared flow as Google (`FacebookOAuthButton` in the same module,
+rendered under it on both pages): `signInWithOAuth({ provider: "facebook" })`
+with `email public_profile` scopes, same `/auth/callback` exchange, same
+workspace routing. Existing Facebook account → signed in; new one → Supabase
+creates the user. No App Secret in frontend code — it lives only in the
+Supabase provider configuration.
+
+Missing-email handling: Facebook can authenticate without sharing an email
+(declined permission, unconfirmed address, phone-based account). LeadFlow
+keys identity, invites, and notifications by email, so the callback signs
+such sessions out immediately and returns to login with an explanatory
+error instead of bouncing between the dashboard guard and login.
+
+Required console configuration (no new app env vars):
+
+- Meta for Developers → your app → Add Product → Facebook Login →
+  Settings → Valid OAuth Redirect URIs: add
+  `https://<project-ref>.supabase.co/auth/v1/callback`.
+- While the Meta app is in Development mode, add each tester under Roles →
+  Testers (only testers can sign in). Switching to Live later requires App
+  Review for the `email` permission if Meta flags it.
+- Supabase Dashboard → Authentication → Providers → Facebook: enable with
+  the Meta App ID + App Secret.
+- Same URL Configuration allowlist as Google (`/auth/callback` per origin).
+
 ## Remaining integration
 
 None for auth mail — wire `MAIL_PROVIDER=resend` + `RESEND_API_KEY` in

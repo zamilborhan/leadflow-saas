@@ -165,6 +165,26 @@ export const env = {
   get resendApiKey(): string | undefined {
     return read("RESEND_API_KEY");
   },
+
+  // --- Supabase (optional auth foundation). Deliberately optional getters:
+  // the app boots and all existing auth flows work with Supabase
+  // unconfigured; Supabase clients throw a clear message only when actually
+  // used, and the proxy skips session refresh. Only the publishable key is
+  // ever referenced — no service-role or secret key exists in this codebase,
+  // and NEXT_PUBLIC_ values are safe to expose to the browser by design.
+  get supabaseUrl(): string | undefined {
+    return read("NEXT_PUBLIC_SUPABASE_URL");
+  },
+
+  get supabasePublishableKey(): string | undefined {
+    return read("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+  },
+
+  get isSupabaseConfigured(): boolean {
+    return Boolean(
+      read("NEXT_PUBLIC_SUPABASE_URL") && read("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
+    );
+  },
 };
 
 export type AppEnv = typeof env;

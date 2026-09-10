@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { signOutEverywhere } from "@/src/components/auth/logout-button";
 import { Dropdown } from "@/src/components/ui/dropdown";
 import { NotificationBell } from "./notification-bell";
 
@@ -18,7 +19,7 @@ export function Header({ userEmail, onMenuClick }: HeaderProps) {
   const [query, setQuery] = useState("");
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await signOutEverywhere();
     router.push("/login");
     router.refresh();
   }

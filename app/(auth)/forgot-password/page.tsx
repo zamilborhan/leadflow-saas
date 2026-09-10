@@ -4,9 +4,11 @@ import { useState } from "react";
 import { AuthLayout } from "@/src/components/layout/auth-layout";
 import { Button } from "@/src/components/ui/button";
 import { Field, Input } from "@/src/components/ui/input";
+import { createClient } from "@/src/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [pending, setPending] = useState(false);
@@ -14,18 +16,26 @@ export default function ForgotPasswordPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setEmailError("Enter a valid email address.");
+      return;
+    }
+    setEmailError(null);
     setPending(true);
     try {
-      const res = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = (await res.json()) as { message?: string; error?: string; errors?: Record<string, string> };
-      if (!res.ok) {
-        setError(data.error ?? (data.errors ? Object.values(data.errors).join(" ") : "Request failed."));
+      let supabase;
+      try {
+        supabase = createClient();
+      } catch {
+        setError("Password reset is not configured yet. Contact support.");
         return;
       }
+      // Generic outcome either way: Supabase reveals nothing about whether
+      // the address is registered.
+      await supabase.auth.resetPasswordForEmail(trimmed.toLowerCase(), {
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      });
       setDone(true);
     } catch {
       setError("Network error. Please try again.");
@@ -37,7 +47,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthLayout
       title="Forgot password"
-      subtitle="We'll email you a single-use reset link (expires in 1 hour)."
+      subtitle="We'll email you a link to choose a new password."
       footer={
         <>
           Remembered it?{" "}
@@ -52,8 +62,8 @@ export default function ForgotPasswordPage() {
           If an account exists for this email, a password reset link has been sent.
         </p>
       ) : (
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
-          <Field label="Email" required>
+        <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+          <Field label="Email" required error={emailError}>
             <Input
               type="email"
               required

@@ -180,3 +180,102 @@ export function validateProfileUpdate(input: unknown): {
   }
   return { ok: true, errors: {}, value };
 }
+
+// --- Supabase email/password form validation (client-side, import-free) ---
+// Passwords are verified by Supabase Auth server-side; these checks only give
+// fast, friendly feedback. Minimum is 8 (Supabase itself enforces 6).
+
+export const SUPABASE_MIN_PASSWORD_LENGTH = 8;
+
+function supabaseEmailError(email: unknown): string | null {
+  if (typeof email !== "string" || !isValidEmailShape(email.trim())) {
+    return "Enter a valid email address.";
+  }
+  return null;
+}
+
+function supabasePasswordError(password: unknown, field = "Password"): string | null {
+  if (typeof password !== "string" || password.length < SUPABASE_MIN_PASSWORD_LENGTH) {
+    return `${field} must be at least ${SUPABASE_MIN_PASSWORD_LENGTH} characters.`;
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) return `${field} is too long.`;
+  return null;
+}
+
+export interface SupabaseRegisterValue {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export function validateSupabaseRegister(input: {
+  name: unknown;
+  email: unknown;
+  password: unknown;
+  confirmPassword: unknown;
+}): { ok: boolean; errors: FieldErrors; value?: SupabaseRegisterValue } {
+  const errors: FieldErrors = {};
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  if (name.length === 0) errors.name = ["Full name is required."];
+  else if (name.length > MAX_NAME_LENGTH) errors.name = ["Name is too long."];
+
+  const emailErr = supabaseEmailError(input.email);
+  if (emailErr) errors.email = [emailErr];
+
+  const passwordErr = supabasePasswordError(input.password);
+  if (passwordErr) errors.password = [passwordErr];
+
+  if (typeof input.confirmPassword !== "string" || input.confirmPassword.length === 0) {
+    errors.confirmPassword = ["Please confirm your password."];
+  } else if (input.password !== input.confirmPassword) {
+    errors.confirmPassword = ["Passwords do not match."];
+  }
+
+  if (Object.keys(errors).length > 0) return { ok: false, errors };
+  return {
+    ok: true,
+    errors: {},
+    value: {
+      name,
+      email: normalizeEmail(String(input.email).trim()),
+      password: String(input.password),
+    },
+  };
+}
+
+export function validateSupabaseLogin(input: {
+  email: unknown;
+  password: unknown;
+}): { ok: boolean; errors: FieldErrors; value?: { email: string; password: string } } {
+  const errors: FieldErrors = {};
+  const emailErr = supabaseEmailError(input.email);
+  if (emailErr) errors.email = [emailErr];
+  if (typeof input.password !== "string" || input.password.length === 0) {
+    errors.password = ["Password is required."];
+  }
+  if (Object.keys(errors).length > 0) return { ok: false, errors };
+  return {
+    ok: true,
+    errors: {},
+    value: {
+      email: normalizeEmail(String(input.email).trim()),
+      password: String(input.password),
+    },
+  };
+}
+
+export function validateSupabaseNewPassword(input: {
+  password: unknown;
+  confirmPassword: unknown;
+}): { ok: boolean; errors: FieldErrors; value?: { password: string } } {
+  const errors: FieldErrors = {};
+  const passwordErr = supabasePasswordError(input.password, "New password");
+  if (passwordErr) errors.password = [passwordErr];
+  if (typeof input.confirmPassword !== "string" || input.confirmPassword.length === 0) {
+    errors.confirmPassword = ["Please confirm your new password."];
+  } else if (input.password !== input.confirmPassword) {
+    errors.confirmPassword = ["Passwords do not match."];
+  }
+  if (Object.keys(errors).length > 0) return { ok: false, errors };
+  return { ok: true, errors: {}, value: { password: String(input.password) } };
+}
