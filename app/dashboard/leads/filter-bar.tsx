@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Select } from "@/src/components/ui/select";
 import { LEAD_STATUSES, LEAD_STATUS_LABEL, type AgentOption } from "./lead-status";
+
+const SEARCH_DEBOUNCE_MS = 400;
 
 export interface LeadFilters {
   search: string;
@@ -31,6 +33,7 @@ export function LeadFilterBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(initial.search);
+  const firstRender = useRef(true);
 
   function navigate(overrides: Partial<LeadFilters> & { page?: number }) {
     const params = new URLSearchParams(searchParams.toString());
@@ -46,6 +49,20 @@ export function LeadFilterBar({
     params.set("page", String(overrides.page ?? 1));
     router.replace(`${pathname}?${params.toString()}`);
   }
+
+  // Debounced auto-search: typing filters without hammering navigation —
+  // one replace per pause, Enter still submits instantly. Skips the first
+  // render so back/forward + filter selects don't double-navigate.
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    if (search === initial.search) return;
+    const t = setTimeout(() => navigate({ search }), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   return (
     <form

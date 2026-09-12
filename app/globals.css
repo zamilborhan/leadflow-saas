@@ -1,24 +1,77 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Brand: trustworthy emerald for a conversion-focused B2B SaaS. */
-  --color-brand-50: #ecfdf5;
-  --color-brand-100: #d1fae5;
-  --color-brand-200: #a7f3d0;
-  --color-brand-300: #6ce9b7;
-  --color-brand-400: #34d399;
-  --color-brand-500: #10b981;
-  --color-brand-600: #059669;
-  --color-brand-700: #047857;
-  --color-brand-800: #065f46;
-  --color-brand-900: #064e3b;
+  /* LeadFlow brand: professional indigo — trustworthy, modern, business-focused. */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-pop: 0 8px 24px rgb(15 23 42 / 0.12);
+
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-pop-in: pop-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-shimmer: shimmer 1.6s linear infinite;
 }
 
 :root {
   color-scheme: light;
+
+  /* Centralized semantic design tokens — change globally here. */
+  --primary: var(--color-brand-600);
+  --primary-foreground: #ffffff;
+  --background: var(--color-slate-100);
+  --foreground: var(--color-slate-900);
+  --muted: var(--color-slate-100);
+  --muted-foreground: var(--color-slate-500);
+  --card: #ffffff;
+  --card-foreground: var(--color-slate-900);
+  --border: var(--color-slate-200);
+  --input: var(--color-slate-300);
+  --ring: var(--color-brand-600);
+  --success: #059669;
+  --success-bg: #ecfdf5;
+  --warning: #b45309;
+  --warning-bg: #fffbeb;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --info: #0284c7;
+  --info-bg: #f0f9ff;
+
+  /* Typography scale */
+  --text-display: 2.25rem;
+  --text-h1: 1.5rem;
+  --text-h2: 1.25rem;
+  --text-h3: 1rem;
+  --text-body: 0.875rem;
+  --text-small: 0.8125rem;
+  --text-caption: 0.75rem;
+
+  /* Spacing rhythm */
+  --page-px: 1rem;
+  --page-py: 1.5rem;
+  --card-p: 1.25rem;
+  --section-gap: 1.5rem;
+}
+
+/* Dark-mode-ready token structure (light values today, dark overrides later). */
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 html {
@@ -27,15 +80,70 @@ html {
 
 body {
   min-height: 100%;
-  background-color: var(--color-slate-100);
-  color: var(--color-slate-900);
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+
+/* Type scale utilities */
+.t-display { font-size: var(--text-display); line-height: 1.15; letter-spacing: -0.02em; font-weight: 700; }
+.t-h1 { font-size: var(--text-h1); line-height: 1.3; letter-spacing: -0.01em; font-weight: 650; }
+.t-h2 { font-size: var(--text-h2); line-height: 1.35; font-weight: 600; }
+.t-h3 { font-size: var(--text-h3); line-height: 1.45; font-weight: 600; }
 
 /* Consistent, visible keyboard focus across the component system. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-brand-600);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+}
+
+/* Subtle premium motion */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes shimmer {
+  from { background-position: -400px 0; }
+  to { background-position: 400px 0; }
+}
+
+.animate-fade-in { animation: var(--animate-fade-in); }
+.animate-pop-in { animation: var(--animate-pop-in); }
+
+/* Skeleton shimmer */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--color-slate-200) 25%, var(--color-slate-100) 50%, var(--color-slate-200) 75%);
+  background-size: 800px 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* Refined scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-slate-300) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--color-slate-300); border-radius: 8px; }
+
+/* Below-the-fold heavy sections skip rendering until near viewport —
+   pairs with Suspense streaming for cheap initial paint on mobile. */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 640px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -82,7 +82,22 @@ export function LoadingState({ label = "Loading…", className }: { label?: stri
 
 /** Skeleton lines for loading content shapes. Decorative (aria-hidden). */
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={cn("animate-pulse rounded-md bg-slate-200", className)} />;
+  return <div aria-hidden="true" className={cn("skeleton-shimmer animate-pulse rounded-md", className)} />;
+}
+
+/** Card-shaped skeleton for dashboard/table loading states. */
+export function CardSkeleton({ lines = 3 }: { lines?: number }) {
+  return (
+    <div aria-hidden="true" className="rounded-[14px] border border-slate-200 bg-white p-5">
+      <div className="skeleton-shimmer h-3 w-24 rounded" />
+      <div className="skeleton-shimmer mt-3 h-8 w-20 rounded" />
+      <div className="mt-3 flex flex-col gap-2">
+        {Array.from({ length: lines }).map((_, i) => (
+          <div key={i} className="skeleton-shimmer h-2.5 rounded" style={{ width: `${88 - i * 12}%` }} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /** Failure placeholder with retry. Announced via role=alert. */

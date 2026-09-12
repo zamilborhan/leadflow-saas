@@ -17,7 +17,7 @@ import { LeadListPagination } from "./list-pagination";
 import { LEAD_STATUS_BADGE, LEAD_STATUS_LABEL, type AgentOption } from "./lead-status";
 
 export const metadata = {
-  title: "Leads — LeadFlow BD",
+  title: "Leads — LeadFlow",
 };
 
 function firstParam(v: string | string[] | undefined): string {
@@ -139,24 +139,26 @@ export default async function LeadsPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Leads"
-        description={`Every prospect in ${business.name}, from Facebook forms and manual entry.`}
+        description="Manage and track all your incoming leads."
         eyebrow="CRM"
         actions={
           <LeadFormDialog businessId={business.id} agents={agents} canAssign={canAssign} triggerLabel="Add lead" />
         }
       />
 
-      <Card>
-        <LeadFilterBar businessId={business.id} initial={initial} agents={agents} />
+      <Card className="overflow-hidden">
+        <div className="border-b border-slate-100">
+          <LeadFilterBar businessId={business.id} initial={initial} agents={agents} />
+        </div>
         {page.total === 0 ? (
           <EmptyState
-            title={query.search || query.status || query.assignee ? "No leads match" : "No leads yet"}
+            title={query.search || query.status || query.assignee ? "No leads match your filters" : "No leads yet"}
             description={
               query.archived === "archived"
                 ? "Nothing is archived. Archived leads can be restored from here."
-                : "Try adjusting your filters, or add your first lead to start building pipeline."
+                : "No leads have been added to this workspace yet. Add your first lead or connect Facebook to auto-import."
             }
-            action={<Badge variant="brand">Connect Facebook to auto-import</Badge>}
+            action={<LeadFormDialog businessId={business.id} agents={agents} canAssign={canAssign} triggerLabel="Add your first lead" />}
           />
         ) : (
           <Table>
@@ -180,15 +182,25 @@ export default async function LeadsPage({
             </TableHeader>
             <TableBody>
               {page.leads.map((lead) => (
-                <TableRow key={lead.id}>
+                <TableRow key={lead.id} className="group">
                   <TableCell>
-                    <Link
-                      href={`/dashboard/leads/${lead.id}?businessId=${business.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700 hover:underline"
-                    >
-                      {lead.name}
-                    </Link>
-                    {lead.email ? <span className="block text-xs font-normal text-slate-500">{lead.email}</span> : null}
+                    <span className="flex items-center gap-2.5">
+                      <span
+                        aria-hidden="true"
+                        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700"
+                      >
+                        {(lead.name.trim()[0] ?? "?").toUpperCase()}
+                      </span>
+                      <span className="min-w-0">
+                        <Link
+                          href={`/dashboard/leads/${lead.id}?businessId=${business.id}`}
+                          className="block truncate font-medium text-slate-900 group-hover:text-brand-700 hover:underline"
+                        >
+                          {lead.name}
+                        </Link>
+                        {lead.email ? <span className="block truncate text-xs font-normal text-slate-500">{lead.email}</span> : null}
+                      </span>
+                    </span>
                     {lead.archivedAt ? (
                       <Badge variant="neutral" className="mt-1">
                         Archived

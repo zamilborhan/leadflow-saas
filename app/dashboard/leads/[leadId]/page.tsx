@@ -98,15 +98,20 @@ export default async function LeadDetailsPage({
   const canSend = hasPermission(membership.role, "whatsapp.send");
 
   // Resolve display names for everyone referenced by the timeline/notes.
+  // Batched into one concurrent round (not one await per row) so leads
+  // with long histories don't pay a sequential N+1.
   const nameCache = new Map<string, string>();
-  async function displayName(userId: string | null): Promise<string> {
+  const referencedIds = [...new Set([...activities.map((a) => a.actorId), ...notes.map((n) => n.authorId)])].filter(
+    (id): id is string => Boolean(id)
+  );
+  const referencedUsers = await Promise.all(referencedIds.map((id) => findUserById(id).catch(() => null)));
+  for (let i = 0; i < referencedIds.length; i++) {
+    const found = referencedUsers[i];
+    nameCache.set(referencedIds[i], found ? (found.name ?? found.email) : "Unknown user");
+  }
+  function displayName(userId: string | null): string {
     if (!userId) return "System";
-    const cached = nameCache.get(userId);
-    if (cached) return cached;
-    const found = await findUserById(userId).catch(() => null);
-    const label = found ? (found.name ?? found.email) : "Unknown user";
-    nameCache.set(userId, label);
-    return label;
+    return nameCache.get(userId) ?? "Unknown user";
   }
   const timeline = [];
   for (const a of activities) {
@@ -114,13 +119,13 @@ export default async function LeadDetailsPage({
       id: a.id,
       type: a.type,
       body: a.body,
-      actorName: await displayName(a.actorId),
+      actorName: displayName(a.actorId),
       createdAt: a.createdAt,
     });
   }
   const noteItems = [];
   for (const n of notes) {
-    noteItems.push({ ...n, authorName: await displayName(n.authorId) });
+    noteItems.push({ ...n, authorName: displayName(n.authorId) });
   }
 
   const agents: AgentOption[] = (rosterResult?.ok ? rosterResult.roster.members : []).map((m) => ({

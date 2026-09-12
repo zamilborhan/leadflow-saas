@@ -55,7 +55,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
         type="button"
         aria-label="Close dialog"
         onClick={onClose}
-        className="absolute inset-0 cursor-default bg-slate-950/50"
+        className="animate-fade-in absolute inset-0 cursor-default bg-slate-950/50"
       />
       <div
         ref={panelRef}
@@ -65,7 +65,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
         className={cn(
-          "relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl",
+          "animate-pop-in relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl",
           SIZES[size]
         )}
       >

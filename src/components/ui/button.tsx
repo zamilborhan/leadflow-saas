@@ -1,15 +1,16 @@
 import type { ButtonHTMLAttributes, AnchorHTMLAttributes, ReactNode } from "react";
 import { cn } from "@/src/lib/cn";
 
-type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "link";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
   primary: "bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800",
   secondary: "bg-slate-900 text-white shadow-sm hover:bg-slate-700 active:bg-slate-800",
-  outline: "border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 active:bg-slate-100",
-  ghost: "text-slate-700 hover:bg-slate-100 active:bg-slate-200",
+  outline: "border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-slate-400 hover:bg-slate-50 active:bg-slate-100",
+  ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200",
   danger: "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800",
+  link: "text-brand-700 hover:text-brand-800 hover:underline",
 };
 
 const SIZES: Record<Size, string> = {
@@ -19,7 +20,7 @@ const SIZES: Record<Size, string> = {
 };
 
 export const BUTTON_BASE =
-  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-medium transition-colors select-none disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-medium transition-all select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 export function buttonClasses(variant: Variant = "primary", size: Size = "md", extra?: string): string {
   return cn(BUTTON_BASE, VARIANTS[variant], SIZES[size], extra);

@@ -59,8 +59,31 @@ export const authRateLimiter = new RateLimiter();
 /** Per-endpoint budgets: [max attempts, window]. */
 export const RATE_LIMITS = {
   register: { limit: 10, windowMs: 10 * 60 * 1000 },
+  registerEmail: { limit: 3, windowMs: 60 * 60 * 1000 },
+  registerGlobal: { limit: 500, windowMs: 10 * 60 * 1000 },
   loginIp: { limit: 20, windowMs: 10 * 60 * 1000 },
   loginEmail: { limit: 10, windowMs: 15 * 60 * 1000 },
   forgotPassword: { limit: 5, windowMs: 60 * 60 * 1000 },
+  forgotEmail: { limit: 3, windowMs: 60 * 60 * 1000 },
   resetPassword: { limit: 10, windowMs: 10 * 60 * 1000 },
+  verifyConfirm: { limit: 10, windowMs: 10 * 60 * 1000 },
 } as const;
+
+/**
+ * Authenticated-API budgets (per user + route). Mitigates member-driven
+ * abuse of expensive endpoints (checkout, drain/sweep, sync, invites).
+ * Same in-memory backing as auth limits; swap for Redis in multi-instance
+ * deploys without changing call sites.
+ */
+export const API_RATE_LIMITS = {
+  checkout: { limit: 10, windowMs: 10 * 60 * 1000 },
+  automationExpensive: { limit: 20, windowMs: 5 * 60 * 1000 },
+  notificationSync: { limit: 30, windowMs: 5 * 60 * 1000 },
+  memberInvite: { limit: 20, windowMs: 10 * 60 * 1000 },
+  messageSend: { limit: 60, windowMs: 5 * 60 * 1000 },
+  ipnPerIp: { limit: 60, windowMs: 5 * 60 * 1000 },
+  ipnPerTran: { limit: 20, windowMs: 5 * 60 * 1000 },
+} as const;
+
+/** Process-wide limiter for authenticated + public webhook routes. */
+export const apiRateLimiter = new RateLimiter();

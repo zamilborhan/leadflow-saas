@@ -10,6 +10,7 @@ import { Button } from "@/src/components/ui/button";
 import { Field, Input } from "@/src/components/ui/input";
 import { LoadingState } from "@/src/components/ui/states";
 import { validateSupabaseLogin, type FieldErrors } from "@/src/lib/auth/validation";
+import { normalizeNextPath } from "@/src/lib/auth/callback-destination";
 
 const CALLBACK_ERRORS: Record<string, string> = {
   oauth_cancelled: "Social sign-in was cancelled. Try again or use email.",
@@ -23,8 +24,9 @@ const CALLBACK_ERRORS: Record<string, string> = {
 };
 
 function safeNext(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
-  return raw.slice(0, 200);
+  // Shared allowlist (open-redirect safe); proxy only ever generates
+  // protected paths, all covered, with dashboard as the fallback.
+  return normalizeNextPath(raw) ?? "/dashboard";
 }
 
 function LoginForm() {
@@ -39,18 +41,24 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [oauthBusy, setOauthBusy] = useState(false);
+  const [checked, setChecked] = useState(false);
   const busy = pending || oauthBusy;
 
   // Already signed in (session persists across restarts) → skip login.
   // Requires an email: provider sessions without one are signed out by the
   // callback, and must never bounce between here and the dashboard guard.
+  // The form renders only after the check, so signed-in users never see a
+  // flash of the login card.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const address = await getAuthenticatedEmail();
-      if (!cancelled && address) {
+      if (cancelled) return;
+      if (address) {
         router.replace(await resolvePostAuthDestination(next));
+        return;
       }
+      setChecked(true);
     })();
     return () => {
       cancelled = true;
@@ -91,6 +99,9 @@ function LoginForm() {
         </>
       }
     >
+      {!checked ? (
+        <LoadingState label="Checking your session…" />
+      ) : (
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
         <GoogleOAuthButton
           next={next}
@@ -141,6 +152,7 @@ function LoginForm() {
           </a>
         </p>
       </form>
+      )}
     </AuthLayout>
   );
 }

@@ -206,4 +206,39 @@ describe("dashboard tenant scoping", () => {
     assert.ok([301, 302, 307, 308].includes(res.status), `expected redirect, got ${res.status}`);
     assert.match(res.location ?? "", /\/login/);
   });
+
+  it("routes workspace-less users to onboarding, owners to the dashboard", async () => {
+    const fresh = await registerAndLogin();
+    // Simulate a newcomer with no workspace yet (e.g. fresh OAuth signup).
+    const client = pg();
+    await client.connect();
+    try {
+      const { rows } = await client.query(`SELECT id FROM "User" WHERE email = $1`, [fresh.email]);
+      await client.query(`DELETE FROM "BusinessMember" WHERE "userId" = $1`, [rows[0].id]);
+      await client.query(`DELETE FROM "Business" WHERE "ownerId" = $1`, [rows[0].id]);
+    } finally {
+      await client.end();
+    }
+
+    // No workspace → server redirect to onboarding (never the dashboard).
+    const toOnboarding = await getHtml("/dashboard", fresh.cookie);
+    assert.ok([301, 302, 307, 308].includes(toOnboarding.status), `expected redirect, got ${toOnboarding.status}`);
+    assert.match(toOnboarding.location ?? "", /\/onboarding\/workspace/);
+
+    // Onboarding renders the creation form for signed-in users…
+    const form = await getHtml("/onboarding/workspace", fresh.cookie);
+    assert.equal(form.status, 200);
+    assert.ok(form.html.includes("Create workspace"), "onboarding missing title");
+    assert.ok(form.html.includes("Business name"), "onboarding missing business name field");
+
+    // …but bounces strangers to login, and owners straight to the dashboard.
+    const anon = await getHtml("/onboarding/workspace", undefined);
+    assert.ok([301, 302, 307, 308].includes(anon.status), `expected redirect, got ${anon.status}`);
+    assert.match(anon.location ?? "", /\/login/);
+
+    const owner = await registerAndLogin();
+    const owned = await getHtml("/onboarding/workspace", owner.cookie);
+    assert.ok([301, 302, 307, 308].includes(owned.status), `expected redirect, got ${owned.status}`);
+    assert.match(owned.location ?? "", /\/dashboard/);
+  });
 });

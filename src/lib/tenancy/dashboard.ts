@@ -7,7 +7,7 @@
  * the resolved `businessId`.
  */
 import { LeadTable } from "../../prisma/tables";
-import { findActiveUserById } from "../auth/users";
+import { findUsersByIds } from "../auth/users";
 import {
   listUserBusinesses,
   toBusinessId,
@@ -111,13 +111,19 @@ export async function getBusinessDashboard(
   const { business, membership } = resolved.context;
   const businessId = toBusinessId(business.id);
 
-  // One scoped read over active leads; counts are derived in code.
+  // Scoped reads run in parallel: lead rows (stats + latest 8) and the
+  // follow-up summary are independent. Stats derive from the same rows so
+  // no second lead query is issued. Recent-lead assignee names resolve in
+  // ONE batched parallel lookup — never N sequential round-trips.
   // createdAt desc, latest 8.
-  const rows = await LeadTable.where((l) => l.businessId.eq(businessId))
-    .where((l) => l.archivedAt.isNull())
-    .select(...LEAD_FIELDS)
-    .orderBy((l) => l.createdAt.desc())
-    .all();
+  const [rows, followUps] = await Promise.all([
+    LeadTable.where((l) => l.businessId.eq(businessId))
+      .where((l) => l.archivedAt.isNull())
+      .select(...LEAD_FIELDS)
+      .orderBy((l) => l.createdAt.desc())
+      .all(),
+    getFollowUpSummary(resolved.context),
+  ]);
 
   const stats = emptyStats();
   stats.total = rows.length;
@@ -148,12 +154,15 @@ export async function getBusinessDashboard(
   stats.conversionRate = stats.total > 0 ? (stats.converted / stats.total) * 100 : null;
 
   const recentLeads: DashboardLead[] = [];
-  for (const row of rows.slice(0, 8)) {
-    let assigneeName: string | null = null;
-    if (row.assignedTo) {
-      const assignee = await findActiveUserById(row.assignedTo).catch(() => null);
-      assigneeName = assignee?.name ?? assignee?.email ?? null;
-    }
+  const recent = rows.slice(0, 8);
+  const assigneeIds = recent
+    .map((r) => r.assignedTo)
+    .filter((v): v is NonNullable<typeof v> => v !== null && v !== undefined)
+    .map((v) => String(v));
+  const assignees = await findUsersByIds(assigneeIds);
+  for (const row of recent) {
+    const assignee = row.assignedTo ? (assignees.get(String(row.assignedTo)) ?? null) : null;
+    const assigneeName = assignee?.status === "ACTIVE" ? (assignee.name ?? assignee.email ?? null) : null;
     recentLeads.push({
       id: row.id,
       businessId: row.businessId,
@@ -175,8 +184,6 @@ export async function getBusinessDashboard(
       assigneeName,
     });
   }
-
-  const followUps = await getFollowUpSummary(resolved.context);
 
   return { ok: true, dashboard: { business, membership, stats, recentLeads, followUps } };
 }

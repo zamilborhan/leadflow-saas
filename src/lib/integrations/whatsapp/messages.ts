@@ -389,21 +389,23 @@ async function processMessageRow(
   }
 }
 
-/** Single message, scoped (unknown/foreign → 404). */
+/** Single message, scoped (unknown/foreign → 404). Requires leads.read. */
 export async function getMessage(
   context: BusinessContext,
   messageId: string
 ): Promise<WhatsAppMessageDTO | null> {
+  requirePermission(context, "leads.read");
   const row = await findMessageInBusiness(messageId, context.business.id);
   if (!row) return null;
   return toDTO(row);
 }
 
-/** Lead message history, newest first. */
+/** Lead message history, newest first. Requires leads.read. */
 export async function listLeadMessages(
   context: BusinessContext,
   leadId: string
 ): Promise<WhatsAppMessageDTO[]> {
+  requirePermission(context, "leads.read");
   const lead = await getLead(context, leadId);
   if (!lead) throw new TenantNotFound();
   const businessId = toBusinessId(context.business.id);

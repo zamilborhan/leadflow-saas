@@ -53,6 +53,55 @@ docker-compose.yml Local PostgreSQL + Redis services
 - Business A must NEVER read or mutate Business B data: every query and every
   protected route enforces tenant isolation + authorization checks.
 
+### Vocabulary: Business = Workspace
+
+The codebase predates the product vocabulary: `Business` is the workspace /
+tenant root, `BusinessMember` is the workspace membership
+(`userId` + `businessId` + `OWNER | ADMIN | SALES`). So:
+
+| Product term      | Code                               |
+| ----------------- | ---------------------------------- |
+| User              | `User` (or Supabase `auth.users`)  |
+| Workspace         | `Business`                         |
+| Workspace member  | `BusinessMember`                   |
+| Sales agent       | `BusinessMember` with `SALES` role |
+| Pipeline stage    | `Lead.status`                      |
+| Workspace settings| Per-feature rows (connections, subscriptions, notification prefs) |
+
+No rename is planned: renaming the tenant root would churn every table,
+route, and test for zero security benefit.
+
+### Enforcement layers (all server-side — the browser is never trusted)
+
+1. **Identity choke point.** Route handlers resolve the caller exclusively
+   through `getCurrentUser()` (`src/lib/auth/dal.ts`): database `lf_session`
+   first, Supabase session fallback. Nothing reads identity cookies directly.
+2. **Membership choke point.** `findMembership(userId, businessId)` is the
+   only workspace-access check; `resolveBusinessContext()` additionally
+   rejects missing, malformed, non-member, and suspended workspaces —
+   all four indistinguishable (403, no data leaked, no membership probing).
+3. **Scoped data access.** Every tenant lib query filters by `businessId`
+   first (`getLead`, `queryLeads`, members, follow-ups, notifications,
+   billing, integrations); writes re-check the row belongs to the context
+   business before mutating. Bare-id lookups exist only for second-step
+   writes on already-scoped rows.
+4. **Role gates.** Mutations call `requirePermission`/`requireRole`
+   (e.g. member management needs `members.invite`, plan changes are
+   OWNER-only, quotas re-derived from stored plans — never from the request).
+5. **Optimistic proxy.** `proxy.ts` redirects signed-out visitors before
+   render; the DAL re-verifies on every call.
+
+### Why no Row Level Security
+
+App data lives in our PostgreSQL via Prisma — never in Supabase tables —
+so there is no RLS to configure. The equivalent guarantee is the rule above:
+no query and no route touches tenant data without a verified
+(`userId`, `businessId`) membership, enforced in code and covered by
+`tests/tenant-isolation.test.mjs`, `team-management.test.mjs`, and the
+per-suite isolation cases. Webhooks (Meta/WhatsApp/SSLCommerz) are the only
+unauthenticated surface and authenticate via signatures/shared secrets, then
+resolve the tenant from stored connection rows — never from caller input.
+
 ## Security rules
 
 - No secrets in code, compose files, or git. Secrets come from the

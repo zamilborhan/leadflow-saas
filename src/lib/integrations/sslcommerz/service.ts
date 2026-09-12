@@ -382,7 +382,19 @@ export async function handleIpnNotification(
   }
 
   if (payload.status !== "VALID") {
-    const mapped = payload.status === "CANCELLED" ? "CANCELLED" : payload.status === "FAILED" ? "FAILED" : "EXPIRED";
+    // Security note: non-VALID IPNs carry no val_id, so server-side Order
+    // Validation cannot confirm them. The gateway signs no stable local
+    // field for these statuses, so authenticity rests on the unguessable
+    // tran_id (LF- + 80-bit random, never enumerated) plus per-IP /
+    // per-tran rate limits at the route. Only PENDING/INITIATED payments
+    // move; terminal rows never regress. UNATTEMPTED (user never paid)
+    // maps explicitly to EXPIRED.
+    const mapped =
+      payload.status === "CANCELLED"
+        ? "CANCELLED"
+        : payload.status === "FAILED"
+          ? "FAILED"
+          : "EXPIRED";
     await setPayment(payment.id, { status: mapped as PaymentStatus, lastError: `Gateway reported ${payload.status}.` });
     const invoice = await findInvoiceByPayment(businessId, payment.id);
     if (invoice && invoice.status === "DRAFT") {
@@ -468,9 +480,16 @@ export async function handleIpnNotification(
     return { processed: true, duplicate: false, payment: updated ? toPaymentDTO(updated) : payment };
   }
 
-  // Success: record, invoice, activate — then re-read before stamping the
-  // activation so a racing duplicate cannot activate twice.
+  // Success: record, then re-verify the row BEFORE activating so racing
+  // duplicate deliveries cannot double-extend the subscription. The row is
+  // terminal (SUCCESS) from here on, so late racers collapse at the top
+  // guard; this second read closes the remaining race between two
+  // concurrent deliveries that both passed the pre-check.
   await setPayment(payment.id, { status: "SUCCESS", valId: payload.valId, riskLevel: 0, lastError: null });
+  const preActivate = await findPaymentByTranId(payload.tranId);
+  if (preActivate?.activatedAt) {
+    return { processed: false, duplicate: true, payment: toPaymentDTO(preActivate) };
+  }
   const invoice = await findInvoiceByPayment(businessId, payment.id);
   const nowMs = opts?.nowMs ?? Date.now();
   if (!isValidPlanCode(payment.planCode)) {

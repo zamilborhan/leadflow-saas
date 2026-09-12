@@ -4534,7 +4534,24 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "businessId"
+                  ],
+                  "name": "AutomationJob_businessId_idx_ae0ed511",
+                  "prefix": "AutomationJob_businessId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status"
+                  ],
+                  "name": "AutomationJob_status_idx_e98638ab",
+                  "prefix": "AutomationJob_status_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -4757,7 +4774,24 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "Business_createdAt_idx_9575dbd7",
+                  "prefix": "Business_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status"
+                  ],
+                  "name": "Business_status_idx_e98638ab",
+                  "prefix": "Business_status_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -4816,7 +4850,24 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "businessId"
+                  ],
+                  "name": "BusinessMember_businessId_idx_ae0ed511",
+                  "prefix": "BusinessMember_businessId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "BusinessMember_userId_idx_a489d58a",
+                  "prefix": "BusinessMember_userId_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -5169,7 +5220,25 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "businessId",
+                    "createdAt"
+                  ],
+                  "name": "Lead_businessId_createdAt_idx_776e65e5",
+                  "prefix": "Lead_businessId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status"
+                  ],
+                  "name": "Lead_status_idx_e98638ab",
+                  "prefix": "Lead_status_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -5641,7 +5710,24 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "businessId"
+                  ],
+                  "name": "MetaLeadEvent_businessId_idx_ae0ed511",
+                  "prefix": "MetaLeadEvent_businessId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status"
+                  ],
+                  "name": "MetaLeadEvent_status_idx_e98638ab",
+                  "prefix": "MetaLeadEvent_status_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -6053,7 +6139,32 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "businessId"
+                  ],
+                  "name": "Payment_businessId_idx_ae0ed511",
+                  "prefix": "Payment_businessId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "Payment_createdAt_idx_9575dbd7",
+                  "prefix": "Payment_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status"
+                  ],
+                  "name": "Payment_status_idx_e98638ab",
+                  "prefix": "Payment_status_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -6396,7 +6507,32 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "Subscription_createdAt_idx_9575dbd7",
+                  "prefix": "Subscription_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "planCode"
+                  ],
+                  "name": "Subscription_planCode_idx_07791b31",
+                  "prefix": "Subscription_planCode_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status"
+                  ],
+                  "name": "Subscription_status_idx_e98638ab",
+                  "prefix": "Subscription_status_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -6465,7 +6601,24 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "User_createdAt_idx_9575dbd7",
+                  "prefix": "User_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "status"
+                  ],
+                  "name": "User_status_idx_e98638ab",
+                  "prefix": "User_status_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -6795,7 +6948,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d02dfe1f198deb531814722871b81425e2ccc93de88295cc65507b0a07bd6bae"
+    "storageHash": "1811e4431056cd28edc9e0848922c5488c2c026e4cb3cbab395572d1633128b6"
   },
   "execution": {
     "executionHash": "e78903a0bbc9ba4e5561311fe79d1dc82bc4d8b0d97edcc7c78796f383f83c4f",

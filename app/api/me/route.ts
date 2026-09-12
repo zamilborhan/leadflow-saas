@@ -1,7 +1,9 @@
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { meService, updateProfileService } from "@/src/lib/auth/service";
 import { SESSION_COOKIE_NAME } from "@/src/lib/auth/cookies";
-import { applyServiceResult, internalError, readJsonBody } from "@/src/lib/auth/http";
+import { applyServiceResult, internalError, isAllowedRequestOrigin, readJsonBody } from "@/src/lib/auth/http";
+import { env } from "@/src/lib/env";
 
 export async function GET() {
   try {
@@ -15,6 +17,9 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
+    if (!isAllowedRequestOrigin(req, env.appUrl)) {
+      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+    }
     const store = await cookies();
     const result = await updateProfileService(
       store.get(SESSION_COOKIE_NAME)?.value,

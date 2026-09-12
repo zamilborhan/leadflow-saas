@@ -22,16 +22,21 @@ function RegisterForm() {
   const [checkEmail, setCheckEmail] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [oauthBusy, setOauthBusy] = useState(false);
+  const [checked, setChecked] = useState(false);
   const busy = pending || oauthBusy;
 
   // Already signed in → skip registration (email required, as on login).
+  // Content renders only after the check: no flash of the form.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const address = await getAuthenticatedEmail();
-      if (!cancelled && address) {
+      if (cancelled) return;
+      if (address) {
         router.replace(await resolvePostAuthDestination("/dashboard"));
+        return;
       }
+      setChecked(true);
     })();
     return () => {
       cancelled = true;
@@ -84,7 +89,9 @@ function RegisterForm() {
         </>
       }
     >
-      {checkEmail ? (
+      {!checked ? (
+        <LoadingState label="Checking your session…" />
+      ) : checkEmail ? (
         <div className="flex flex-col gap-4">
           <p role="status" className="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800">
             Account created! Check <span className="font-bold">{checkEmail}</span> for the
@@ -176,8 +183,7 @@ function RegisterForm() {
   );
 }
 
-export default function RegisterPage() {
-  return (
+export default function RegisterPage() {  return (
     <Suspense fallback={<LoadingState label="Loading…" />}>
       <RegisterForm />
     </Suspense>

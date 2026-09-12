@@ -280,6 +280,13 @@ export async function linkOrCreate(profile: ProviderProfile, provider: OAuthProv
 
   const byEmail = await findUserByEmail(profile.email);
   if (byEmail) {
+    // Never link an unverified provider email to an existing account:
+    // otherwise a provider that permits unverified emails would let an
+    // attacker claim a victim's local account. Unverified profiles may only
+    // create nothing here — the caller surfaces a verification error.
+    if (!profile.emailVerified) {
+      throw new Error("[oauth] provider email is not verified");
+    }
     try {
       await OAuthAccountTable.create({
         userId: toUserId(byEmail.id),

@@ -5,7 +5,7 @@ export { Badge } from "./badge";
 export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./card";
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./table";
 export { Pagination } from "./pagination";
-export { EmptyState, LoadingState, Skeleton, ErrorState } from "./states";
+export { EmptyState, LoadingState, Skeleton, CardSkeleton, ErrorState } from "./states";
 export { ToastProvider, useToast } from "./toast";
 export { Modal } from "./modal";
 export { ConfirmDialog } from "./confirm-dialog";

@@ -53,7 +53,9 @@ export async function requireBusinessContext(req: Request): Promise<GuardResult 
 /** Map tenancy errors to status codes. TenantNotFound → 404 (no inference). */
 export function tenancyErrorResponse(err: unknown): NextResponse {
   if (err instanceof TenantAccessDenied) {
-    return NextResponse.json({ error: err.message }, { status: 403 });
+    // Generic denial: role/permission details never reach the client, so
+    // authenticated probing cannot learn the permission map.
+    return NextResponse.json({ error: "Access denied for this business." }, { status: 403 });
   }
   if (err instanceof TenantNotFound) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });

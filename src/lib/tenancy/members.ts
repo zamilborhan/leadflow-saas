@@ -29,9 +29,11 @@ export async function inviteMember(
     throw new TenantAccessDenied(`Role ${context.membership.role} cannot invite ${role}.`);
   }
   const user = await findUserByEmail(email.trim().toLowerCase());
-  if (!user) throw new TenantAccessDenied("No account exists for this email.");
+  // No enumeration oracle: unknown emails and existing members share one
+  // generic denial (status stays 403; message identical).
+  if (!user) throw new TenantAccessDenied("Unable to invite this email to this business.");
   const existing = await findMembership(user.id, context.business.id);
-  if (existing) throw new TenantAccessDenied("User is already a member of this business.");
+  if (existing) throw new TenantAccessDenied("Unable to invite this email to this business.");
   // Server-side quota: re-read live member count — request fields cannot
   // influence the outcome.
   await assertMemberQuota(context.business.id);

@@ -12,7 +12,7 @@
  * agent display names.
  */
 import { FollowUpTable, LeadTable } from "../../prisma/tables";
-import { findUserById } from "../auth/users";
+import { findUsersByIds } from "../auth/users";
 import { toBusinessId } from "./businesses";
 import type { BusinessContext } from "./context";
 import { requirePermission } from "./policies";
@@ -108,11 +108,11 @@ async function readFollowUpRows(businessId: string): Promise<AnalyticsFollowUpRo
 }
 
 async function resolveAgentNames(userIds: string[]): Promise<Map<string, { name: string | null; email: string | null }>> {
+  // Batched parallel lookup — one logical round of queries instead of N
+  // sequential awaits. Best-effort: unknown ids stay absent ("Unknown").
+  const users = await findUsersByIds(userIds).catch(() => new Map());
   const out = new Map<string, { name: string | null; email: string | null }>();
-  for (const userId of userIds) {
-    const user = await findUserById(userId).catch(() => null);
-    out.set(userId, { name: user?.name ?? null, email: user?.email ?? null });
-  }
+  for (const [id, u] of users) out.set(id, { name: u.name, email: u.email });
   return out;
 }
 

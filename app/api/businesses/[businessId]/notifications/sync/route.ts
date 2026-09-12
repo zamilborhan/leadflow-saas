@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME } from "@/src/lib/auth/cookies";
-import { getSessionUser } from "@/src/lib/auth/sessions";
+import { getCurrentUser } from "@/src/lib/auth/dal";
 import { resolveBusinessContext } from "@/src/lib/tenancy/context";
 import { tenancyErrorResponse } from "@/src/lib/tenancy/guards";
 import {
@@ -10,8 +8,7 @@ import {
 } from "@/src/lib/tenancy/notifications";
 
 async function guard(businessId: string) {
-  const store = await cookies();
-  const user = await getSessionUser(store.get(SESSION_COOKIE_NAME)?.value);
+  const user = await getCurrentUser();
   if (!user) return { error: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
   const resolved = await resolveBusinessContext(user.id, businessId);
   if (!resolved.ok) {
@@ -32,6 +29,20 @@ export async function POST(_req: Request, { params }: Params) {
     const { businessId } = await params;
     const g = await guard(businessId);
     if ("error" in g) return g.error;
+    try {
+      const { apiRateLimiter, API_RATE_LIMITS } = await import("@/src/lib/auth/rate-limit");
+      const budget = API_RATE_LIMITS.notificationSync;
+      const decision = apiRateLimiter.check(
+        `notif-sync:${g.user.id}:${businessId}`,
+        budget.limit,
+        budget.windowMs
+      );
+      if (!decision.allowed) {
+        return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+      }
+    } catch {
+      // Limiter failure must not block legitimate syncs.
+    }
     const [followUps, connections] = await Promise.all([
       syncFollowUpNotifications(g.context.business.id),
       syncConnectionNotifications(g.context.business.id),

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/src/lib/cn";
 import { PageHeader } from "@/src/components/ui/page-header";
 
@@ -28,6 +28,13 @@ export function SettingsShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const businessId = searchParams.get("businessId");
+  function withWorkspace(href: string): string {
+    if (!businessId) return href;
+    const sep = href.includes("?") ? "&" : "?";
+    return `${href}${sep}businessId=${encodeURIComponent(businessId)}`;
+  }
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={title} description={description} eyebrow="Workspace" />
@@ -38,7 +45,7 @@ export function SettingsShell({
             return (
               <li key={tab.href}>
                 <Link
-                  href={tab.href}
+                  href={withWorkspace(tab.href)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "block border-b-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",

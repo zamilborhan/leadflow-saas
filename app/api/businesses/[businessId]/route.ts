@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME } from "@/src/lib/auth/cookies";
-import { getSessionUser } from "@/src/lib/auth/sessions";
+import { getCurrentUser } from "@/src/lib/auth/dal";
 import { getBusinessForMember } from "@/src/lib/tenancy/businesses";
 import { tenancyErrorResponse } from "@/src/lib/tenancy/guards";
 
@@ -11,8 +9,7 @@ export async function GET(
 ) {
   try {
     const { businessId } = await params;
-    const store = await cookies();
-    const user = await getSessionUser(store.get(SESSION_COOKIE_NAME)?.value);
+    const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
     // Membership-verified fetch: non-members and missing ids are identical.
     const business = await getBusinessForMember(user.id, businessId);

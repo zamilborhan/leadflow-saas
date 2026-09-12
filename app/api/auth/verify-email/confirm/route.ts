@@ -16,7 +16,11 @@ async function confirm(req: Request): Promise<Response> {
       input = await readJsonBody(req);
     }
     const result = await confirmVerificationService(input, getClientIp(req.headers));
-    return applyServiceResult(result);
+    const res = applyServiceResult(result);
+    // Secret-in-URL mitigation: email tokens travel in ?token= for mail-client
+    // compatibility. Never allow caching or referrer leakage of this response.
+    res.headers.set("Cache-Control", "no-store");
+    return res;
   } catch (err) {
     return internalError("verify-email-confirm", err);
   }

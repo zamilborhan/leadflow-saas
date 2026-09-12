@@ -23,6 +23,11 @@ export interface UserDTO {
   status: string;
   createdAt: string;
   emailVerifiedAt: string | null;
+  /** OAuth avatar URL when the provider shares one; null for local accounts
+   * (this project has no avatar uploads/storage). */
+  avatarUrl?: string | null;
+  /** Last-sign-in provider (`google`, `facebook`, `email`, …); null when unknown. */
+  authProvider?: string | null;
 }
 
 export interface UserWithHash extends UserDTO {
@@ -69,6 +74,31 @@ export async function findUserById(id: string | UserId): Promise<UserDTO | null>
   };
 }
 
+/**
+ * Batch public user lookup — one round-trip per id issued in parallel with
+ * capped concurrency. Prefer over N sequential `findUserById` calls in
+ * dashboard/analytics widgets. Best-effort: missing ids resolve to null.
+ */
+export async function findUsersByIds(ids: readonly string[]): Promise<Map<string, UserDTO>> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  const out = new Map<string, UserDTO>();
+  if (unique.length === 0) return out;
+  const settled = await Promise.all(
+    unique.map(async (id) => {
+      try {
+        const user = await findUserById(id);
+        return { id, user };
+      } catch {
+        return { id, user: null };
+      }
+    })
+  );
+  for (const { id, user } of settled) {
+    if (user) out.set(id, user);
+  }
+  return out;
+}
+
 export interface CreateUserInput {
   email: string;
   name?: string;
@@ -113,18 +143,22 @@ export async function updateUserPassword(
   });
 }
 
-/** Narrow DTO for API responses — id, email, name + verification flag. */
+/** Narrow DTO for API responses — public profile fields only, never secrets. */
 export function toPublicUser(user: UserDTO): {
   id: string;
   email: string;
   name: string | null;
   emailVerified: boolean;
+  avatarUrl: string | null;
+  authProvider: string | null;
 } {
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     emailVerified: user.emailVerifiedAt !== null,
+    avatarUrl: user.avatarUrl ?? null,
+    authProvider: user.authProvider ?? null,
   };
 }
 

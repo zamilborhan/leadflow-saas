@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME } from "@/src/lib/auth/cookies";
-import { getSessionUser } from "@/src/lib/auth/sessions";
+import { getCurrentUser } from "@/src/lib/auth/dal";
 import { resolveBusinessContext } from "@/src/lib/tenancy/context";
 import { tenancyErrorResponse } from "@/src/lib/tenancy/guards";
 import {
@@ -10,8 +8,7 @@ import {
 } from "@/src/lib/integrations/meta/service";
 
 async function guard(businessId: string) {
-  const store = await cookies();
-  const user = await getSessionUser(store.get(SESSION_COOKIE_NAME)?.value);
+  const user = await getCurrentUser();
   if (!user) return { error: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
   const resolved = await resolveBusinessContext(user.id, businessId);
   if (!resolved.ok) {

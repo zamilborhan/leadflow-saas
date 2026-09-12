@@ -16,7 +16,7 @@ import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME, parseSessionCookie } from "./src/lib/auth/cookies";
 import { updateSupabaseSession } from "./src/lib/supabase/middleware";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/create-workspace"];
+const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/onboarding"];
 const PROTECTED_API = ["/api/me", "/api/businesses", "/api/admin"];
 const GUEST_ONLY = ["/login", "/register"];
 
@@ -62,5 +62,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/create-workspace", "/api/me", "/api/businesses/:path*", "/api/admin/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/onboarding/:path*", "/api/me", "/api/businesses/:path*", "/api/admin/:path*", "/login", "/register"],
 };

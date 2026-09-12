@@ -9,6 +9,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <DashboardShell
       userEmail={user.email}
+      avatarUrl={user.avatarUrl ?? null}
       businesses={businesses.map((b) => ({ id: b.id, name: b.name }))}
     >
       {children}

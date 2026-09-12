@@ -27,11 +27,13 @@ export async function sendMail(input: SendMailInput): Promise<void> {
     return;
   }
   // Default `log` provider (also covers unknown values fail-safe).
+  // Never log token-bearing bodies: verification/reset URLs contain
+  // single-use secrets that would turn log retention into a credential
+  // store. Operators get routing metadata only.
   console.log("[mail] send", {
     provider: "log",
     to: input.to,
     subject: input.subject,
-    text: input.text,
   });
 }
 

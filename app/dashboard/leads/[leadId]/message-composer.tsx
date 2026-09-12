@@ -83,14 +83,17 @@ export function MessageComposer({
   );
 
   useEffect(() => {
-    setValues({});
-  }, [templateKey]);
-
-  useEffect(() => {
     return () => {
       if (pollTimer.current) clearTimeout(pollTimer.current);
     };
   }, []);
+
+  function onTemplateChange(nextKey: string) {
+    setTemplateKey(nextKey);
+    // Reset stale variable values with the template switch itself instead
+    // of a cascading effect, so one render reflects the new template.
+    setValues({});
+  }
 
   async function fetchMessage(id: string): Promise<WhatsAppMessageDTO | null> {
     try {
@@ -209,7 +212,7 @@ export function MessageComposer({
         ) : (
           <form onSubmit={onSend} className="flex flex-col gap-4">
             <Field label="Template">
-              <Select value={templateKey} onChange={(e) => setTemplateKey(e.target.value)} aria-label="Select WhatsApp template">
+              <Select value={templateKey} onChange={(e) => onTemplateChange(e.target.value)} aria-label="Select WhatsApp template">
                 <option value="">Choose a template…</option>
                 {approved.map((t) => (
                   <option key={`${t.name}\u0000${t.language}`} value={`${t.name}\u0000${t.language}`}>

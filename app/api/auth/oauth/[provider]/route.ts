@@ -9,10 +9,10 @@ import {
   type OAuthProvider,
 } from "@/src/lib/auth/oauth";
 import { env } from "@/src/lib/env";
+import { normalizeNextPath } from "@/src/lib/auth/callback-destination";
 
 function safeNext(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
-  return raw.slice(0, 200);
+  return normalizeNextPath(raw) ?? "/dashboard";
 }
 
 export async function GET(

@@ -26,6 +26,15 @@ export async function getSupabaseUser(): Promise<UserDTO | null> {
         : typeof meta["name"] === "string" && meta["name"].trim().length > 0
           ? (meta["name"] as string).trim()
           : null;
+    // OAuth avatar: Google/Facebook share `avatar_url` (Google also sends
+    // `picture`). Used for display only — never written back anywhere.
+    const avatarUrl =
+      typeof meta["avatar_url"] === "string" && meta["avatar_url"].startsWith("https://")
+        ? (meta["avatar_url"] as string)
+        : typeof meta["picture"] === "string" && meta["picture"].startsWith("https://")
+          ? (meta["picture"] as string)
+          : null;
+    const appMeta = (u.app_metadata ?? {}) as Record<string, unknown>;
     return {
       id: u.id,
       email: u.email,
@@ -33,6 +42,9 @@ export async function getSupabaseUser(): Promise<UserDTO | null> {
       status: "ACTIVE",
       createdAt: u.created_at,
       emailVerifiedAt: u.email_confirmed_at ?? null,
+      avatarUrl,
+      authProvider:
+        typeof appMeta["provider"] === "string" ? (appMeta["provider"] as string) : null,
     };
   } catch {
     return null;

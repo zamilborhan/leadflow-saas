@@ -1,22 +1,23 @@
 /**
  * Supabase auth callback: exchanges the `code` from email confirmation,
- * password-recovery, and OAuth (Google) links for a session, then redirects.
+ * password-recovery, and OAuth (Google/Facebook) links for a session, then
+ * redirects.
  *
- * - `?next=` selects the destination (restricted to local paths).
- * - Default destination (`/dashboard`) is workspace-aware: users who own no
- *   workspace go to `/create-workspace` instead. Explicit deep links
- *   (e.g. `/reset-password`) are always respected.
- * - Provider refusals (`?error=`, e.g. cancelled Google consent) and bad
- *   codes land on `/login` with an `?error=` code; nothing secret leaks.
+ * - `?next=` selects the destination from a strict allowlist
+ *   (`/dashboard`, `/onboarding/workspace`, `/reset-password`, `/admin`;
+ *   see `src/lib/auth/callback-destination.ts`). Anything else falls back
+ *   to the workspace-aware default below.
+ * - Default: workspace exists → `/dashboard`; none → `/onboarding/workspace`
+ *   (lookup failures fail closed to onboarding, never pretending).
+ * - Email-less provider users are signed out with an explanatory login
+ *   error instead of bouncing between guards.
+ * - Provider refusals (`?error=`) and bad codes land on `/login` with an
+ *   `?error=` code; nothing secret leaks.
  */
 import { NextResponse } from "next/server";
 import { createClient } from "@/src/lib/supabase/server";
+import { resolveCallbackDestination } from "@/src/lib/auth/callback-destination";
 import { listUserBusinesses } from "@/src/lib/tenancy/businesses";
-
-function safeNext(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
-  return raw.slice(0, 200);
-}
 
 function loginUrl(req: Request, error: string): NextResponse {
   const url = new URL("/login", req.url);
@@ -34,7 +35,6 @@ export async function GET(req: Request) {
   }
 
   const code = url.searchParams.get("code");
-  const next = safeNext(url.searchParams.get("next"));
   if (!code) return loginUrl(req, "callback_invalid_link");
 
   let supabase;
@@ -62,18 +62,17 @@ export async function GET(req: Request) {
     return loginUrl(req, "oauth_no_email");
   }
 
-  // Same sign-in / first-registration flow, so one rule: a fresh account owns
-  // no workspace and must create one before the dashboard is useful.
-  if (next === "/dashboard") {
-    try {
-      const businesses = await listUserBusinesses(user.id).catch(() => []);
-      if (businesses.length === 0) {
-        return NextResponse.redirect(new URL("/create-workspace", req.url));
-      }
-    } catch {
-      // Fail open: a workspace-list hiccup must not trap a signed-in user.
-    }
+  // Same sign-in / first-registration flow, so one rule: resolve through
+  // the shared destination policy (explicit allowlisted targets respected,
+  // otherwise workspace-aware; lookup failures fail closed to onboarding).
+  let hasWorkspace = false;
+  try {
+    const businesses = await listUserBusinesses(user.id).catch(() => []);
+    hasWorkspace = businesses.length > 0;
+  } catch {
+    hasWorkspace = false;
   }
-
-  return NextResponse.redirect(new URL(next, req.url));
+  return NextResponse.redirect(
+    new URL(resolveCallbackDestination(url.searchParams.get("next"), hasWorkspace), req.url)
+  );
 }

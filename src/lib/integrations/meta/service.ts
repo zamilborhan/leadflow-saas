@@ -172,6 +172,25 @@ export async function handleMetaCallback(args: {
   if (payload.userId !== args.sessionUserId) {
     throw new MetaOAuthError("OAuth session mismatch.");
   }
+  // TOCTOU: the initiator may have been demoted/removed after starting the
+  // flow. Re-verify live membership + manage permission before writing
+  // credentials — the state signature alone is not authorization.
+  try {
+    const { resolveBusinessContext } = await import("../../tenancy/context");
+    const resolved = await resolveBusinessContext(args.sessionUserId, payload.businessId);
+    if (!resolved.ok) throw new MetaOAuthError("Access denied for this business.");
+    requirePermission(resolved.context, META_MANAGE_PERMISSION);
+  } catch (err) {
+    if (err instanceof MetaOAuthError) throw err;
+    throw new MetaOAuthError("Access denied for this business.");
+  }
+  // Single-use state nonce: reject replays within the TTL.
+  {
+    const { consumeOAuthNonce } = await import("./state");
+    if (!consumeOAuthNonce(payload.nonce, payload.exp)) {
+      throw new MetaOAuthError("Invalid or expired OAuth state.");
+    }
+  }
 
   const appId = args.appId ?? env.metaAppId;
   const appSecret = args.appSecret ?? env.metaAppSecret;

@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME } from "@/src/lib/auth/cookies";
-import { getSessionUser } from "@/src/lib/auth/sessions";
+import { getCurrentUser } from "@/src/lib/auth/dal";
 import { resolveBusinessContext } from "@/src/lib/tenancy/context";
 import { tenancyErrorResponse } from "@/src/lib/tenancy/guards";
 import { requirePermission } from "@/src/lib/tenancy/policies";
 import { retryAutomationJob } from "@/src/lib/automation/jobs";
 
 async function guard(businessId: string) {
-  const store = await cookies();
-  const user = await getSessionUser(store.get(SESSION_COOKIE_NAME)?.value);
+  const user = await getCurrentUser();
   if (!user) return { error: NextResponse.json({ error: "Not authenticated." }, { status: 401 }) };
   const resolved = await resolveBusinessContext(user.id, businessId);
   if (!resolved.ok) {
@@ -39,7 +36,9 @@ export async function POST(_req: Request, { params }: Params) {
         return NextResponse.json({ error: "Not found." }, { status: 404 });
       }
       if (err instanceof Error) {
-        return NextResponse.json({ error: err.message }, { status: 409 });
+        // Generic retry failure: internal attempt counts / upstream details
+        // must not be oracle-fed to callers.
+        return NextResponse.json({ error: "Job cannot be retried in its current state." }, { status: 409 });
       }
       throw err;
     }

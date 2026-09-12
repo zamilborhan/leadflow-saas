@@ -8,7 +8,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 /** Surface container: white card, subtle border + shadow. */
 export function Card({ className, children, ...rest }: CardProps) {
   return (
-    <div className={cn("rounded-xl border border-slate-200 bg-white shadow-sm", className)} {...rest}>
+    <div className={cn("rounded-[14px] border border-slate-200 bg-white shadow-[0_1px_2px_rgb(15_23_42/0.05)]", className)} {...rest}>
       {children}
     </div>
   );

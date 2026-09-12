@@ -39,7 +39,7 @@ status). Proxy checks are optimistic only.
 | PATCH | `/api/me` | Update name / password (current-password checked); 200 `{user}` |
 | GET | `/dashboard` | Protected page (proxy redirect + DAL re-check) |
 | GET | `/forgot-password`, `/reset-password`, `/verify-email` | Public auth UI pages |
-| GET | `/dashboard/settings/profile` | Signed-in profile page (name, password, verification status) |
+| GET | `/dashboard/settings/profile` | Signed-in profile page (avatar, provider, email, name, password, sign-out) |
 
 Rate limits (per IP, in-memory; see `src/lib/auth/rate-limit.ts`):
 register 10/10min, login 20/10min per IP + 10/15min per email,
@@ -77,6 +77,21 @@ known provider id → login; email match → link (+ verify); else create a
 verified, password-less user + auto workspace. Unset credentials hide nothing
 client-side by accident — the authorize route returns 503 with the missing
 var names, and provider tokens are exchanged for a profile then dropped.
+
+## User profile
+
+`GET /api/me` returns the public profile (`id, email, name, emailVerified,
+avatarUrl, authProvider`) for either session type — never hashes or tokens.
+`PATCH /api/me` updates display name and password on both backends (legacy
+row vs. Supabase Auth); the email address is never writable there, so it
+cannot bypass verification.
+
+The profile page shows the OAuth avatar when the provider shares one
+(Google `avatar_url`/`picture`, Facebook `avatar_url`), falling back to the
+account initial — this project has no avatar uploads/storage, so the photo
+is display-only and never written back. Provider (`Google`/`Facebook`/
+`Email`) and verification badges come from the same payload, and sign-out
+reuses the shared logout action.
 
 ## Workspace onboarding
 
@@ -124,7 +139,7 @@ One shared flow for login and registration (`GoogleOAuthButton` in
    (verified email, `full_name` metadata) — never a duplicate, never a
    password in our code.
 3. Default destinations are workspace-aware: zero owned workspaces →
-   `/create-workspace` (protected page with its own creation form); otherwise
+   `/onboarding/workspace` (protected page with its own creation form); otherwise
    `/dashboard`. Explicit deep links are always respected.
 
 Required console configuration (no new app env vars):

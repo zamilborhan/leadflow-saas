@@ -7,7 +7,7 @@ import { EmptyState } from "@/src/components/ui/states";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/src/components/ui/table";
 import { listPaymentsAdmin } from "@/src/lib/admin/payments";
 import { requireSuperAdminForPage } from "@/src/lib/admin/guard";
-import { formatBDT } from "../page";
+import { formatBDT } from "@/src/components/admin/format";
 
 export const metadata = { title: "Payments — Super-admin — LeadFlow BD" };
 

@@ -24,6 +24,7 @@ import {
   getSessionUser,
   revokeSessionByCookie,
 } from "./sessions";
+import { getCurrentUser } from "./dal";
 import {
   requestPasswordReset,
   consumePasswordResetToken,
@@ -68,10 +69,28 @@ export async function registerService(input: unknown, ip: string): Promise<Servi
   const budget = RATE_LIMITS.register;
   const decision = authRateLimiter.check(`register:${ip}`, budget.limit, budget.windowMs);
   if (!decision.allowed) return rateLimited(decision.retryAfterMs);
+  // Per-email + global buckets so rotating X-Forwarded-For alone never
+  // resets the budget (header is client-controlled; see getClientIp).
+  const emailBudget = RATE_LIMITS.registerEmail;
+  const emailDecision = authRateLimiter.check(
+    `register:email:${parsed.value.email}`,
+    emailBudget.limit,
+    emailBudget.windowMs
+  );
+  if (!emailDecision.allowed) return rateLimited(emailDecision.retryAfterMs);
+  const globalBudget = RATE_LIMITS.registerGlobal;
+  const globalDecision = authRateLimiter.check(`register:global`, globalBudget.limit, globalBudget.windowMs);
+  if (!globalDecision.allowed) return rateLimited(globalDecision.retryAfterMs);
 
   const existing = await findUserByEmail(parsed.value.email);
   if (existing) {
-    return { status: 409, body: { error: "An account with this email already exists." } };
+    // No enumeration: identical observable timing + a generic success-shaped
+    // response. Never reveal whether the email exists, never set a session.
+    await dummyVerify(parsed.value.password);
+    return {
+      status: 200,
+      body: { message: "If this email is new, an account was created. Check your inbox to verify." },
+    };
   }
 
   const passwordHash = await hashPassword(parsed.value.password);
@@ -182,6 +201,13 @@ export async function forgotPasswordService(input: unknown, ip: string): Promise
   const budget = RATE_LIMITS.forgotPassword;
   const decision = authRateLimiter.check(`forgot:${ip}`, budget.limit, budget.windowMs);
   if (!decision.allowed) return rateLimited(decision.retryAfterMs);
+  const forgotEmailBudget = RATE_LIMITS.forgotEmail;
+  const forgotEmailDecision = authRateLimiter.check(
+    `forgot:email:${parsed.value.email}`,
+    forgotEmailBudget.limit,
+    forgotEmailBudget.windowMs
+  );
+  if (!forgotEmailDecision.allowed) return rateLimited(forgotEmailDecision.retryAfterMs);
 
   const { token } = await requestPasswordReset(parsed.value.email);
   if (token) {
@@ -214,7 +240,9 @@ export async function resetPasswordService(input: unknown, ip: string): Promise<
 }
 
 export async function meService(cookieValue: string | undefined | null): Promise<ServiceResult> {
-  const user = await getSessionUser(cookieValue);
+  // Bridged read: database session first, Supabase fallback (profile page
+  // works for Supabase users; writes stay on updateProfileService, lf-only).
+  const user = (await getSessionUser(cookieValue)) ?? (await getCurrentUser());
   if (!user) return { status: 401, body: { error: "Not authenticated." } };
   return { status: 200, body: { user: toPublicUser(user) } };
 }
@@ -229,6 +257,13 @@ export async function requestVerificationService(
   const budget = RATE_LIMITS.forgotPassword;
   const decision = authRateLimiter.check(`verify:${ip}`, budget.limit, budget.windowMs);
   if (!decision.allowed) return rateLimited(decision.retryAfterMs);
+  const verifyEmailBudget = RATE_LIMITS.forgotEmail;
+  const verifyEmailDecision = authRateLimiter.check(
+    `verify:email:${parsed.value.email}`,
+    verifyEmailBudget.limit,
+    verifyEmailBudget.windowMs
+  );
+  if (!verifyEmailDecision.allowed) return rateLimited(verifyEmailDecision.retryAfterMs);
 
   const { token } = await requestVerification(parsed.value.email);
   if (token) {
@@ -254,7 +289,7 @@ export async function confirmVerificationService(
   if (token.length < 16 || token.length > 256) {
     return { status: 400, body: { error: GENERIC_VERIFY_FAILURE } };
   }
-  const budget = RATE_LIMITS.resetPassword;
+  const budget = RATE_LIMITS.verifyConfirm;
   const decision = authRateLimiter.check(`verify-confirm:${ip}`, budget.limit, budget.windowMs);
   if (!decision.allowed) return rateLimited(decision.retryAfterMs);
 
@@ -267,27 +302,68 @@ export async function updateProfileService(
   cookieValue: string | undefined | null,
   input: unknown
 ): Promise<ServiceResult> {
-  const sessionUser = await getSessionUser(cookieValue);
-  if (!sessionUser) return { status: 401, body: { error: "Not authenticated." } };
   const parsed = validateProfileUpdate(input);
   if (!parsed.ok || !parsed.value) return { status: 422, body: { errors: parsed.errors } };
 
-  const { UserTable } = await import("../../prisma/tables");
-  const uid = toUserId(sessionUser.id);
-  const patch: { name?: string | null; passwordHash?: string } = {};
-  if (parsed.value.name !== undefined) patch.name = parsed.value.name;
-  if (parsed.value.newPassword !== undefined) {
-    const full = await findUserByEmail(sessionUser.email);
-    if (full?.passwordHash) {
-      const ok = await verifyPassword(parsed.value.currentPassword ?? "", full.passwordHash);
-      if (!ok) return { status: 401, body: { error: "Current password is incorrect." } };
+  // Legacy database user: name/password live in our own User row.
+  const sessionUser = await getSessionUser(cookieValue);
+  if (sessionUser) {
+    const { UserTable } = await import("../../prisma/tables");
+    const uid = toUserId(sessionUser.id);
+    const patch: { name?: string | null; passwordHash?: string } = {};
+    if (parsed.value.name !== undefined) patch.name = parsed.value.name;
+    if (parsed.value.newPassword !== undefined) {
+      const full = await findUserByEmail(sessionUser.email);
+      if (full?.passwordHash) {
+        const ok = await verifyPassword(parsed.value.currentPassword ?? "", full.passwordHash);
+        if (!ok) return { status: 401, body: { error: "Current password is incorrect." } };
+      } else {
+        // OAuth-only account: a hijacked session alone must not install a
+        // persistent password credential. Require inbox proof via the
+        // password-reset flow instead.
+        return {
+          status: 403,
+          body: { error: "Password setup requires email verification. Use the password reset flow." },
+        };
+      }
+      patch.passwordHash = await hashPassword(parsed.value.newPassword);
     }
-    patch.passwordHash = await hashPassword(parsed.value.newPassword);
+    if (Object.keys(patch).length > 0) {
+      await UserTable.where({ id: uid }).update(patch);
+    }
+    const fresh = await findUserById(sessionUser.id);
+    if (!fresh) return { status: 401, body: { error: "Not authenticated." } };
+    return { status: 200, body: { user: toPublicUser(fresh) } };
   }
-  if (Object.keys(patch).length > 0) {
-    await UserTable.where({ id: uid }).update(patch);
+
+  // Supabase user: name/password live in Supabase Auth. The email address is
+  // deliberately never writable here — changing it must go through
+  // Supabase's own verification flow, never around it.
+  const { getSupabaseUser } = await import("./supabase-user");
+  const supaUser = await getSupabaseUser();
+  if (!supaUser) return { status: 401, body: { error: "Not authenticated." } };
+  try {
+    const { createClient } = await import("../supabase/server");
+    const supabase = await createClient();
+    if (parsed.value.newPassword !== undefined) {
+      // Session alone must not install a persistent credential without
+      // proof of inbox control. Supabase password changes go through its
+      // own verified reset/recovery flow, never this session endpoint.
+      return {
+        status: 403,
+        body: { error: "Password change for Supabase accounts requires the verified reset flow." },
+      };
+    }
+    if (parsed.value.name !== undefined) {
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: parsed.value.name },
+      });
+      if (error) return { status: 400, body: { error: error.message } };
+    }
+  } catch {
+    return { status: 500, body: { error: "Could not update profile. Please try again." } };
   }
-  const fresh = await findUserById(sessionUser.id);
+  const fresh = await getSupabaseUser();
   if (!fresh) return { status: 401, body: { error: "Not authenticated." } };
   return { status: 200, body: { user: toPublicUser(fresh) } };
 }

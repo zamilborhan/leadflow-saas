@@ -173,7 +173,12 @@ export const env = {
   // ever referenced — no service-role or secret key exists in this codebase,
   // and NEXT_PUBLIC_ values are safe to expose to the browser by design.
   get supabaseUrl(): string | undefined {
-    return read("NEXT_PUBLIC_SUPABASE_URL");
+    const raw = read("NEXT_PUBLIC_SUPABASE_URL");
+    if (!raw) return undefined;
+    // Normalize: Supabase project URL must be the base (https://xxx.supabase.co).
+    // A common misconfiguration is pasting the REST endpoint (.../rest/v1/)
+    // which breaks Auth with "Invalid path specified in request URL".
+    return raw.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
   },
 
   get supabasePublishableKey(): string | undefined {

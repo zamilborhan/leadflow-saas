@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { AuthLayout } from "@/src/components/layout/auth-layout";
 import { requireUserForPage } from "@/src/lib/auth/dal";
 import { listUserBusinesses } from "@/src/lib/tenancy/businesses";
-import { CreateWorkspaceForm } from "./create-workspace-form";
+import { CreateWorkspaceForm } from "./workspace-form";
 
 export const metadata = {
   title: "Create workspace — LeadFlow BD",

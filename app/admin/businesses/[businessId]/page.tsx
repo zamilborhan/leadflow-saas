@@ -8,7 +8,7 @@ import { getBusinessAdmin, getBusinessUsageAdmin } from "@/src/lib/admin/busines
 import { requireSuperAdminForPage } from "@/src/lib/admin/guard";
 import { listPaymentsAdmin } from "@/src/lib/admin/payments";
 import { BusinessModerationActions } from "./actions";
-import { formatBDT } from "../../page";
+import { formatBDT } from "@/src/components/admin/format";
 
 export const metadata = { title: "Business detail — Super-admin — LeadFlow BD" };
 

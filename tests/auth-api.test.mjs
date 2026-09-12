@@ -159,11 +159,15 @@ describe("register + login + logout", () => {
     assert.match(setCookie, /Path=\//i);
   });
 
-  it("rejects duplicate registration with 409", async () => {
+  it("does not enumerate existing accounts on duplicate registration", async () => {
     const email = testEmail();
     assert.equal((await api("POST", "/api/auth/register", { body: { email, password: PASSWORD } })).status, 201);
     const dup = await api("POST", "/api/auth/register", { body: { email, password: PASSWORD } });
-    assert.equal(dup.status, 409);
+    // Generic success-shaped response: no 409 oracle, no session, no user object.
+    assert.equal(dup.status, 200);
+    assert.ok(dup.json.message);
+    assert.equal(dup.json.user, undefined);
+    assert.equal(dup.cookie, null);
     assertNoSecrets(dup.json, "duplicate register");
   });
 

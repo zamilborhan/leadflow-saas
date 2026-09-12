@@ -66,7 +66,12 @@ export async function GET(
   }
 
   const session = await createSession(userId);
-  const dest = new URL(verified.next.startsWith("/") ? verified.next : "/dashboard", env.appUrl);
+  // `verified.next` is HMAC-bound and minted only from allowlisted values,
+  // but re-resolve through the allowlist here too so a signer bug can never
+  // turn this redirect into an in-app phishing target or off-origin URL.
+  const { normalizeNextPath: normalizeCallbackNext } = await import("@/src/lib/auth/callback-destination");
+  const nextPath = normalizeCallbackNext(verified.next) ?? "/dashboard";
+  const dest = new URL(nextPath, env.appUrl);
   if (businessId && dest.pathname === "/dashboard" && !dest.searchParams.get("businessId")) {
     dest.searchParams.set("businessId", businessId);
   }

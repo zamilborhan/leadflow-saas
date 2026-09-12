@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME } from "@/src/lib/auth/cookies";
-import { getSessionUser } from "@/src/lib/auth/sessions";
+import { getCurrentUser } from "@/src/lib/auth/dal";
 import { env } from "@/src/lib/env";
 import { handleMetaCallback, MetaOAuthError } from "@/src/lib/integrations/meta/service";
 import { MetaApiError } from "@/src/lib/integrations/meta/client";
@@ -13,8 +11,7 @@ import { MetaApiError } from "@/src/lib/integrations/meta/client";
  * carry only a generic flag — never codes, tokens, or debug detail.
  */
 export async function GET(req: Request) {
-  const store = await cookies();
-  const user = await getSessionUser(store.get(SESSION_COOKIE_NAME)?.value);
+  const user = await getCurrentUser();
   const url = new URL(req.url);
   const fail = (businessId?: string) => {
     const next = new URL("/dashboard/settings", env.nextAuthUrl);

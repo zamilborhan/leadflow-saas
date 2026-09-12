@@ -1,18 +1,12 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { LeadFlowLogo } from "@/src/components/brand/LeadFlowLogo";
 
 /** Marketing/auth brand header shared by public pages. */
 export function BrandMark({ compact }: { compact?: boolean }) {
   return (
-    <Link href="/" className="inline-flex items-center gap-2.5" aria-label="LeadFlow BD home">
-      <Image src="/icon.png" alt="" aria-hidden="true" width={36} height={36} className="size-9 rounded-lg" />
-      {!compact ? (
-        <span className="flex flex-col leading-none">
-          <span className="text-[15px] font-bold text-slate-900">LeadFlow</span>
-          <span className="text-[11px] font-semibold tracking-widest text-brand-700 uppercase">Bangladesh</span>
-        </span>
-      ) : null}
+    <Link href="/" className="inline-flex items-center rounded-lg" aria-label="LeadFlow home">
+      {compact ? <LeadFlowLogo variant="mark" /> : <LeadFlowLogo />}
     </Link>
   );
 }
@@ -34,11 +28,35 @@ export function AuthLayout({
 }) {
   return (
     <div className="flex min-h-screen bg-slate-100">
-      <div className="hidden w-1/2 flex-col justify-between bg-slate-900 p-10 text-white lg:flex">
-        <BrandMark />
-        <div className="max-w-md">
-          <blockquote className="text-2xl leading-snug font-semibold">
-            “We stopped losing Facebook leads the week we switched to LeadFlow.”
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-slate-950 p-10 text-white lg:flex">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -left-24 size-96 rounded-full bg-brand-600/25 blur-3xl" />
+          <div className="absolute right-0 bottom-0 size-80 rounded-full bg-brand-500/15 blur-3xl" />
+          <svg className="absolute inset-0 h-full w-full opacity-[0.07]" aria-hidden="true">
+            <defs>
+              <pattern id="lf-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+                <path d="M32 0H0v32" fill="none" stroke="white" strokeWidth="1" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#lf-grid)" />
+          </svg>
+        </div>
+        <div className="relative">
+          <span className="[&_span]:!text-white [&_span:last-child]:!text-brand-300">
+            <LeadFlowLogo />
+          </span>
+        </div>
+        <div className="relative max-w-md">
+          <div className="flex items-center gap-2">
+            {["Capture", "Assign", "Follow up", "Convert"].map((s, i) => (
+              <span key={s} className="flex items-center gap-2 text-xs font-medium text-slate-300">
+                {i > 0 ? <span aria-hidden="true" className="text-brand-400">→</span> : null}
+                {s}
+              </span>
+            ))}
+          </div>
+          <blockquote className="mt-4 text-2xl leading-snug font-semibold tracking-tight">
+            “We stopped losing leads the week we switched to LeadFlow.”
           </blockquote>
           <p className="mt-4 text-sm text-slate-300">
             Rahim Uddin — Owner, Uddin Coaching Center, Dhaka
@@ -57,7 +75,7 @@ export function AuthLayout({
             ))}
           </dl>
         </div>
-        <p className="text-xs text-slate-400">© {new Date().getFullYear()} LeadFlow BD</p>
+        <p className="relative text-xs text-slate-400">© {new Date().getFullYear()} LeadFlow · Trusted lead CRM</p>
       </div>
       <main className="flex flex-1 flex-col px-4 py-8 sm:px-8">
         <div className="lg:hidden">

@@ -201,8 +201,9 @@ export async function syncTemplates(
   return { synced, pruned };
 }
 
-/** Cached catalog for pickers and review. Membership read (route-guarded). */
+/** Cached catalog for pickers and review. Requires leads.read (defense in depth, not route-only). */
 export async function listTemplates(context: BusinessContext): Promise<TemplateDTO[]> {
+  requirePermission(context, "leads.read");
   const rows = await storedTemplates(context.business.id);
   rows.sort((a, b) => a.name.localeCompare(b.name) || a.language.localeCompare(b.language));
   return rows.map(toDTO);

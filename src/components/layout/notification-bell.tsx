@@ -10,8 +10,9 @@ interface BellItem {
   leadId: string | null;
 }
 
-const POLL_MS = 30_000;
+const POLL_MS = 60_000;
 const MAX_LABEL = 42;
+const INITIAL_DELAY_MS = 2500;
 
 function truncate(s: string): string {
   return s.length > MAX_LABEL ? `${s.slice(0, MAX_LABEL - 1)}…` : s;
@@ -50,23 +51,37 @@ export function NotificationBell({ businessId }: { businessId: string | null }) 
     }
   }, [businessId]);
 
-  // Initial load + polling: all state updates happen in async
-  // continuations (never synchronously in the effect body).
+  // Deferred initial load + visibility-aware polling: the bell never
+  // blocks header paint (first fetch fires after idle), polls at 60s only
+  // while the tab is visible, and skips overlapping requests.
   useEffect(() => {
     let cancelled = false;
+    let inFlight = false;
     const apply = (next: { unread?: number; items?: BellItem[] } | null) => {
       if (cancelled || !next) return;
       if (next.unread !== undefined) setUnread(next.unread);
       if (next.items !== undefined) setItems(next.items);
     };
-    refresh().then(apply);
-    const timer = setInterval(() => refresh().then(apply), POLL_MS);
-    const onFocus = () => refresh().then(apply);
+    const tick = () => {
+      if (document.hidden || inFlight) return;
+      inFlight = true;
+      refresh().then((n) => {
+        inFlight = false;
+        apply(n);
+      });
+    };
+    const idle = window.setTimeout(tick, INITIAL_DELAY_MS);
+    const timer = setInterval(tick, POLL_MS);
+    const onFocus = () => tick();
+    const onVisibility = () => tick();
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
+      clearTimeout(idle);
       clearInterval(timer);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [refresh]);
 

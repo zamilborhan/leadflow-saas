@@ -23,12 +23,39 @@ export const dynamic = "force-dynamic";
  *   payment stays PENDING and nothing activates.
  */
 export async function POST(req: Request) {
+  // Abuse guard: the gateway retries legitimately, but unauthenticated
+  // callers must not be able to burn validation quota or probe tran_ids at
+  // will. Per-IP + per-tran_id budgets; over-budget answers 429 (retryable).
+  try {
+    const { apiRateLimiter, API_RATE_LIMITS } = await import("@/src/lib/auth/rate-limit");
+    const { getClientIp } = await import("@/src/lib/auth/http");
+    const ip = getClientIp(req.headers);
+    const ipBudget = API_RATE_LIMITS.ipnPerIp;
+    const ipDecision = apiRateLimiter.check(`ipn:ip:${ip}`, ipBudget.limit, ipBudget.windowMs);
+    if (!ipDecision.allowed) {
+      return NextResponse.json({ ok: false, error: "Too many requests." }, { status: 429 });
+    }
+  } catch {
+    // Limiter failure must not break acknowledgement; continue fail-open here
+    // (the payment state machine itself stays fail-closed).
+  }
   let form: Record<string, string>;
   try {
     const text = await req.text();
     form = {};
     for (const [key, value] of new URLSearchParams(text)) {
       if (!(key in form)) form[key] = value;
+    }
+    // Per-transaction budget (tran_id is unguessable; a leaked id still
+    // cannot be hammered into state churn).
+    const tranId = form["tran_id"];
+    if (typeof tranId === "string" && tranId.length > 0 && tranId.length <= 30) {
+      const { apiRateLimiter, API_RATE_LIMITS } = await import("@/src/lib/auth/rate-limit");
+      const tBudget = API_RATE_LIMITS.ipnPerTran;
+      const tDecision = apiRateLimiter.check(`ipn:tran:${tranId}`, tBudget.limit, tBudget.windowMs);
+      if (!tDecision.allowed) {
+        return NextResponse.json({ ok: true, processed: false, duplicate: true, payment: null }, { status: 200 });
+      }
     }
   } catch {
     return NextResponse.json({ error: "Unreadable request body." }, { status: 400 });
@@ -38,7 +65,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, ...outcome }, { status: 200 });
   } catch (err) {
     if (err instanceof SslcommerzUpstreamError || err instanceof SslcommerzConfigError) {
-      return NextResponse.json({ ok: false, error: err.message }, { status: 503 });
+      // Generic upstream message: gateway reachability is not oracle-fed to
+      // unauthenticated callers.
+      return NextResponse.json({ ok: false, error: "Payment gateway is temporarily unavailable." }, { status: 503 });
     }
     console.error("[sslcommerz-ipn] failed", { message: err instanceof Error ? err.message : "unknown" });
     return NextResponse.json({ ok: false, error: "Internal server error." }, { status: 500 });

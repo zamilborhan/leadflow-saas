@@ -55,23 +55,23 @@ function toBusinessDTO(row: {
   return { id: row.id, name: row.name, ownerId: row.ownerId, status: row.status, createdAt: row.createdAt, updatedAt: row.updatedAt };
 }
 
-/** True when the workspace is suspended (member access revoked). Unknown ids read as active. */
+/** True when the workspace is suspended (member access revoked). Unknown ids and read failures deny ingestion (fail-closed). */
 export async function isBusinessSuspended(businessId: string): Promise<boolean> {
   let bid: BusinessId;
   try {
     bid = toBusinessId(businessId);
   } catch {
-    return false;
+    return true;
   }
   try {
     const row = await BusinessTable.where({ id: bid }).select("id", "status").first();
-    if (!row || row.id !== businessId) return false;
+    if (!row || row.id !== businessId) return true;
     return row.status === "SUSPENDED";
   } catch {
-    // A transient read failure must not wedge ingestion — the routing read
-    // that located this business just succeeded, so fail open with a log.
-    console.warn("[tenancy] suspension check failed; failing open", { businessId });
-    return false;
+    // Enforcement check: a transient read failure must not admit ingestion
+    // for a possibly-suspended workspace. Fail closed with a log.
+    console.warn("[tenancy] suspension check failed; failing closed", { businessId });
+    return true;
   }
 }
 

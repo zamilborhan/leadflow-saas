@@ -69,9 +69,35 @@ export async function signOAuthState(
   return `v1.${encoded}.${base64UrlEncode(new Uint8Array(sig))}`;
 }
 
+/** Single-use nonce cache: nonce → expiry. Bounds replay within the TTL. */
+const seenNonces = new Map<string, number>();
+
+function pruneNonces(nowMs: number): void {
+  if (seenNonces.size > 5000) {
+    for (const [k, exp] of seenNonces) {
+      if (exp <= nowMs) seenNonces.delete(k);
+    }
+  }
+  if (seenNonces.size > 10000) seenNonces.clear();
+}
+
+/**
+ * Consume a verified state nonce. Returns false when the nonce was already
+ * used (replay) or is expired. Call only after signature verification.
+ */
+export function consumeOAuthNonce(nonce: string, exp: number, nowMs: number = Date.now()): boolean {
+  pruneNonces(nowMs);
+  if (exp <= nowMs) return false;
+  if (seenNonces.has(nonce)) return false;
+  seenNonces.set(nonce, exp);
+  return true;
+}
+
 /**
  * Verify a returned state value. Returns the payload, or null when the
  * format, signature, or expiry is wrong. Never throws on attacker input.
+ * Note: single-use enforcement happens in the callback via
+ * consumeOAuthNonce (verify-only callers such as pure parsers stay side-effect free).
  */
 export async function verifyOAuthState(
   value: string | undefined | null,

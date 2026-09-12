@@ -49,10 +49,10 @@ export default function Home() {
         {/* Hero */}
         <section className="mx-auto w-full max-w-6xl px-4 pt-14 pb-10 text-center sm:px-6 sm:pt-20">
           <Badge variant="brand" dot>
-            Built for Bangladesh businesses
+            Capture → Assign → Follow up → Convert
           </Badge>
-          <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            Turn Facebook leads into <span className="text-brand-700">enrollments & sales</span>
+          <h1 className="t-display mx-auto mt-5 max-w-3xl text-slate-900 sm:text-5xl">
+            Turn Facebook leads into <span className="text-brand-600">enrollments & sales</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base text-slate-500 sm:text-lg">
             LeadFlow captures every Facebook lead, assigns it to the right agent, and keeps
@@ -134,7 +134,7 @@ export default function Home() {
 
       <footer className="border-t border-slate-100">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-slate-400 sm:flex-row sm:px-6">
-          <p>© {new Date().getFullYear()} LeadFlow BD. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} LeadFlow. All rights reserved.</p>
           <nav aria-label="Footer" className="flex gap-4">
             <a href="/login" className="transition-colors hover:text-slate-600">Log in</a>
             <a href="/register" className="transition-colors hover:text-slate-600">Sign up</a>

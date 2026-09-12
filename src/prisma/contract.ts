@@ -20,7 +20,11 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
       createdAt: field.temporal.createdAtString(),
       updatedAt: field.temporal.updatedAtString(),
     },
-  });
+  }).sql(({ cols, constraints }) => ({
+    // Hot paths: admin user directory (status filter, newest-first sort),
+    // dashboard new-user counts (createdAt range).
+    indexes: [constraints.index([cols.status]), constraints.index([cols.createdAt])],
+  }));
 
   const Session = model('Session', {
     fields: {
@@ -96,7 +100,11 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
       createdAt: field.temporal.createdAtString(),
       updatedAt: field.temporal.updatedAtString(),
     },
-  });
+  }).sql(({ cols, constraints }) => ({
+    // Hot paths: admin workspace directory (status filter, newest-first
+    // sort), dashboard workspace counts.
+    indexes: [constraints.index([cols.status]), constraints.index([cols.createdAt])],
+  }));
 
   // Membership of a user in a business + their workspace role
   // (OWNER | ADMIN | SALES as plain text; see src/lib/tenancy/roles.ts).
@@ -109,7 +117,10 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
       createdAt: field.temporal.createdAtString(),
       updatedAt: field.temporal.updatedAtString(),
     },
-  });
+  }).sql(({ cols, constraints }) => ({
+    // Hot paths: member counts per workspace, memberships per user.
+    indexes: [constraints.index([cols.businessId]), constraints.index([cols.userId])],
+  }));
 
   // Workspace roles catalog (seeded: OWNER, ADMIN, SALES).
   const Role = model('Role', {
@@ -177,7 +188,14 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
       createdAt: field.temporal.createdAtString(),
       updatedAt: field.temporal.updatedAtString(),
     },
-  });
+  }).sql(({ cols, constraints }) => ({
+    // Hot paths: active-subscription counts, MRR group-by plan, renewal sort.
+    indexes: [
+      constraints.index([cols.status]),
+      constraints.index([cols.planCode]),
+      constraints.index([cols.createdAt]),
+    ],
+  }));
 
   // SSLCommerz payment attempt. One row per checkout: `tranId` is the
   // gateway-wide unique transaction id (unique constraint = idempotency
@@ -205,7 +223,15 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
       createdAt: field.temporal.createdAtString(),
       updatedAt: field.temporal.updatedAtString(),
     },
-  });
+  }).sql(({ cols, constraints }) => ({
+    // Hot paths: revenue SUM over successful payments per month, failed
+    // payment triage, billing history sort.
+    indexes: [
+      constraints.index([cols.status]),
+      constraints.index([cols.createdAt]),
+      constraints.index([cols.businessId]),
+    ],
+  }));
 
   // Customer-facing invoice for a checkout. One row per payment
   // (`paymentId` unique): DRAFT at initiation, PAID once a validated
@@ -257,6 +283,13 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
     },
   }).attributes(({ fields, constraints }) => ({
     uniques: [constraints.unique([fields.businessId, fields.facebookLeadId])],
+  })).sql(({ cols, constraints }) => ({
+    // Hot paths: every tenant query scopes by businessId; platform lead
+    // directory sorts/filters by date and status.
+    indexes: [
+      constraints.index([cols.businessId, cols.createdAt]),
+      constraints.index([cols.status]),
+    ],
   }));
 
   // WhatsApp Cloud API connection, one per business. Tenant-owned via
@@ -306,6 +339,9 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
     },
   }).attributes(({ fields, constraints }) => ({
     uniques: [constraints.unique([fields.businessId, fields.leadgenId])],
+  })).sql(({ cols, constraints }) => ({
+    // Hot paths: failed-sync monitoring filters by status.
+    indexes: [constraints.index([cols.status]), constraints.index([cols.businessId])],
   }));
 
   // Append-only timeline event for a lead. `businessId` is mandatory and
@@ -556,6 +592,9 @@ export const contract = defineContract({}, ({ field, model, rel }) => {
     },
   }).attributes(({ fields, constraints }) => ({
     uniques: [constraints.unique([fields.businessId, fields.dedupeKey])],
+  })).sql(({ cols, constraints }) => ({
+    // Hot paths: failed-job monitoring filters by status.
+    indexes: [constraints.index([cols.status]), constraints.index([cols.businessId])],
   }));
 
   // Append-only automation log. One row per executed action (automation
