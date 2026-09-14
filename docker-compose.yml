@@ -1,4 +1,6 @@
 services:
+  # Local PostgreSQL. NOT used when DATABASE_URL points at Supabase.
+  # In Supabase mode run only redis: `docker compose up -d redis`.
   postgres:
     image: postgres:16
     container_name: leadflow-postgres
